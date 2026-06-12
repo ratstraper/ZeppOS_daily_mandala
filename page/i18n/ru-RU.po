@@ -98,3 +98,18 @@ msgstr "Daily Practice"
 
 msgid "help_practice_slide1_text"
 msgstr "Each day has its own mandala.\nOpen it. Breathe with it.\nEven 3 minutes is enough.\n\nStreak — your current\nseries of daily sessions.\nBest — your personal record."
+
+msgid "help_practice_slide2_title"
+msgstr "One date.\nOne mandala."
+
+msgid "help_practice_slide2_text"
+msgstr "Every calendar date has\nexactly one mandala.\n\nOnly one person\ncan ever own it.\n\nYour birthday.\nA day that changed your life.\nIt may still be unclaimed."
+
+msgid "help_practice_slide3_title"
+msgstr "One own."
+
+msgid "help_practice_slide3_text"
+msgstr "See your personal mandala\nand check if your date\nis still available.\n\nOnce taken —\nit is gone forever."
+
+msgid "help_practice_slide3_action"
+msgstr "Visit website →"

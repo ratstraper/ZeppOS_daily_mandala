@@ -5,7 +5,7 @@ import { BasePage } from "@zeppos/zml/base-page";
 import { getDeviceInfo } from '@zos/device';
 import { Time } from '@zos/sensor';
 import { getSystemInfo } from '@zos/settings';
-import { LocalStorage } from '@zos/storage'
+import AppStorage from '../../utils/config/storage.js';
 import { getProfile, GENDER_MALE, GENDER_FEMALE } from '@zos/user'
 import LoadingAnimationComponent from '../../utils/components/LoadingAnimationComponent.js';
 
@@ -23,6 +23,7 @@ import {
   FETCH_BUTTON,
   FETCH_RESULT_TEXT,
 } from "zosLoader:./index.[pf].layout.js";
+import { STORAGE_KEYS } from "../../utils/config/constants";
 
 const logger = Logger.getLogger("mandala_day");
 
@@ -41,18 +42,13 @@ logger.log(`Screen size: ${width} x ${height}, shape: ${screenShape}`);
 
 
 /**
- * + сбор данных о пользователях: пол, возраст, регион
- * + локальное хранение для даты последней заказанной мандалы
- * + анимация при получении мандалы https://docs.zepp.com/docs/reference/device-app-api/newAPI/ui/widget/IMG_ANIM/
  * несколько экранов: dashboard, мандала дня, описание, ссылки на минт и сайт
  * описание и контент всего
- * QR на сайт и минт https://docs.zepp.com/docs/reference/device-app-api/newAPI/ui/widget/QRCODE/
  * механизм для уведомлений о новостях в проекте
  */
 Page(
   BasePage({
     state: {
-      storage: null,
     },
     widgets: {
       text: null,
@@ -60,17 +56,7 @@ Page(
       btn: null,
       loading: null,
     },
-    onInit() {
-      this.state.storage = new LocalStorage();
-    },
     build() {
-
-    // if (hmBle.connectStatus() !== true) {
-    //   this.drawNoBLEConnect();
-      
-    // } else {
-    //   logger.log("BLE is connected");
-
       this.widgets.loading = new LoadingAnimationComponent(hmUI);
 
       this.widgets.img = hmUI.createWidget(hmUI.widget.IMG, {
@@ -108,11 +94,11 @@ Page(
                          `${time.getMonth()}`.padStart(2, '0') + 
                          `${time.getFullYear()}`;
 
-      const localMandalaDay = this.state.storage.getItem('mandalaDay');
+      const localMandalaDay = AppStorage.getMandalaDay();
       
       // if (localMandalaDay === mandalaDay) {
       //   logger.log('Mandala for today has already been fetched');
-      //   const savedPath = this.state.storage.getItem('mandalaPath', 'mandaladay.png');
+      //   const savedPath = AppStorage.getMandalaPath() || 'mandaladay.png';
       //   this.drawMandala(savedPath); 
       //   return;
       // }
@@ -136,8 +122,7 @@ Page(
             fs.writeSync({fd, buffer: fileData});
             fs.closeSync({ fd });
           } else {
-            this.state.storage.setItem('mandalaDay', mandalaDay);
-            this.state.storage.setItem('mandalaPath', filePath);
+            AppStorage.setMandalaData(mandalaDay, filePath);
           }
 
           this.drawMandala(filePath);

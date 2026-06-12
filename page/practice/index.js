@@ -6,10 +6,9 @@ import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@z
 import { getDeviceInfo } from "@zos/device";
 import { Time } from "@zos/sensor";
 import { getSystemInfo } from "@zos/settings";
-import { LocalStorage } from "@zos/storage";
 import { push } from '@zos/router';
 import { getProfile, GENDER_MALE, GENDER_FEMALE } from "@zos/user";
-import Analytics from "../../utils/config/analytics.js";
+import AppStorage from "../../utils/config/storage.js";
 import LoadingAnimationComponent from "../../utils/components/LoadingAnimationComponent.js";
 import * as fs from "@zos/fs";
 import {
@@ -20,6 +19,7 @@ import {
 } from "@zos/display";
 
 import { NORMAL_COLOR, PRESSED_COLOR, SELECTED_COLOR } from "zosLoader:./index.[pf].layout.js";
+import { WEBSITE_URL, STORAGE_KEYS } from "../../utils/config/constants";
 
 const logger = Logger.getLogger("practice_screen");
 
@@ -54,10 +54,28 @@ const { age, gender, region } = profile;
 const platform = `${deviceName}/${osVersion}/${minAPI}, FV:${firmwareVersion}, SDK:${sdkVersion}, ${productId}.${productVer}.${deviceSource}`;
 const squareSize = Math.min(width, height) * 1.0;
 
+const SLIDES_PRACTICE = [
+  {
+    titleKey: "help_practice_slide1_title",
+    textKey: "help_practice_slide1_text",
+  },
+  {
+    titleKey: "help_practice_slide2_title",
+    textKey: "help_practice_slide2_text",
+  },
+  {
+    titleKey: "help_practice_slide3_title",
+    textKey: "help_practice_slide3_text",
+    action: {
+      labelKey: "help_practice_slide3_action",
+      url: WEBSITE_URL,
+    },
+  },
+];
+
 Page(
   BasePage({
     state: {
-      storage: null,
       screenState: SCREEN_IDLE,
       selectedIndex: 0,
       progress: {
@@ -90,8 +108,7 @@ Page(
     },
 
     onInit() {
-      this.state.storage = new LocalStorage();
-      const { streak, best, isNextDay, isSameDay } = Analytics.getPracticeDays(new Time());
+      const { streak, best, isNextDay, isSameDay } = AppStorage.getPracticeDays(new Time());
       this.state.progress = {
         streak: streak,
         best: best,
@@ -181,23 +198,6 @@ Page(
         w: width,
         h: height,
       });
-
-      // this.widgets.heroBtn = this.widgets.idleGroup.createWidget(
-      //   hmUI.widget.BUTTON,
-      //   {
-      //     x: this.layout.heroX,
-      //     y: this.layout.heroY,
-      //     w: this.layout.heroW,
-      //     h: this.layout.heroH,
-      //     radius: px(40),
-      //     normal_color: 0xff9933,
-      //     press_color: 0xffff66,
-      //     text: i18n("open"),
-      //     color: 0x000000,
-      //     text_size: px(48),
-      //     click_func: () => this.handleOpenClick(),
-      //   }
-      // );
 
       // 1. Создаем кнопку
 // --- Настройки позиционирования нашей кнопки ---
@@ -548,7 +548,7 @@ Page(
         `${time.getDate()}`.padStart(2, "0") +
         `${time.getMonth()}`.padStart(2, "0") +
         `${time.getFullYear()}`;
-      const userId = `ZeppOS_${Analytics.getInstallationId()}`;
+      const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
 
       this.request({
         method: "GET_MANDALA",
@@ -585,15 +585,13 @@ Page(
           //   fs.writeSync({ fd, buffer: fileData });
           //   fs.closeSync({ fd });
           // } else {
-            this.state.storage.setItem("mandalaDay", mandalaDay);
-            this.state.storage.setItem("mandalaPath", filePath);
+            AppStorage.setMandalaData(mandalaDay, filePath);
           // }
 
 
           this.state.progress.streak = this.state.progress.doneToday ? this.state.progress.streak : this.state.progress.streak + 1;
           this.state.progress.best = Math.max(this.state.progress.best, this.state.progress.streak);
-          this.state.storage.setItem('streakDays', this.state.progress.streak);
-          this.state.storage.setItem('bestStreak', this.state.progress.best);
+          AppStorage.setStreakData(this.state.progress.streak, this.state.progress.best);
 
           this.state.progress.doneToday = true;
 
@@ -613,7 +611,8 @@ Page(
     openHelp() {
       logger.log("Open practice help");
       push({
-        url: "page/practice/help",
+        url: "page/help/index",
+        params: JSON.stringify({ slides: SLIDES_PRACTICE }),
       });
     },
 

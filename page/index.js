@@ -5,8 +5,8 @@ import { BasePage } from "@zeppos/zml/base-page";
 import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@zos/interaction';
 import { scrollTo } from '@zos/page';
 import { push } from '@zos/router';
-import { LocalStorage } from '@zos/storage';
 import { DEVICE_WIDTH, DEVICE_HEIGHT } from '../utils/config/device'
+import { WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR } from '../utils/config/constants';
 
 import {
   FETCH_BUTTON,
@@ -15,11 +15,28 @@ import {
 
 const logger = Logger.getLogger("mandala_day");
 
+const SLIDES_MAIN = [
+  {
+    titleKey: "help_main_slide1_title",
+    textKey: "help_main_slide1_text",
+  },
+  {
+    titleKey: "help_main_slide2_title",
+    textKey: "help_main_slide2_text",
+  },
+  {
+    titleKey: "help_main_slide3_title",
+    textKey: "help_main_slide3_text",
+    action: {
+      labelKey: "help_main_slide3_action",
+      url: WEBSITE_URL,
+    },
+  },
+];
 
 Page(
   BasePage({
     state: {
-      storage: null,
       selectedIndex: -1, // -1 означает, что курсор ни на чем не стоит
       bgRects: [],       // Сюда сложим все фоны кнопок для управления цветом
       menuItems: []      // Данные меню
@@ -28,9 +45,6 @@ Page(
       text: null,
       btn: null,
       questionImg: null
-    },
-    onInit() {
-      this.state.storage = new LocalStorage();
     },
     build() {
       hmUI.createWidget(hmUI.widget.TEXT, {
@@ -58,16 +72,13 @@ Page(
       const startX = px(40);            // Центрирование (40 пикселей от каждого края)
       const buttonWidth = DEVICE_WIDTH - (2 * startX); // Ширина плашки (экран минус отступы по бокам)
 
-      const normalColor = 0x2C2C2C; 
-      const pressedColor = 0x4A4A4A;
-
       const questionIndex = this.state.menuItems.length;
 
 
       // 3. Функция, которая красит нужную кнопку и сбрасывает остальные
       const updateSelection = () => {
         this.state.bgRects.forEach((rect, idx) => {
-          rect.setProperty(hmUI.prop.COLOR, idx === this.state.selectedIndex ? pressedColor : normalColor);
+          rect.setProperty(hmUI.prop.COLOR, idx === this.state.selectedIndex ? PRESSED_COLOR : NORMAL_COLOR);
         });
 
         if (this.widgets.questionImg) {
@@ -114,7 +125,7 @@ Page(
 
         const bgRect = btnGroup.createWidget(hmUI.widget.FILL_RECT, {
           x: 0, y: 0, w: buttonWidth, h: buttonHeight,
-          color: normalColor, radius: px(63)       
+          color: NORMAL_COLOR, radius: px(63)       
         });
         
         this.state.bgRects.push(bgRect);
@@ -176,7 +187,11 @@ Page(
           this.state.selectedIndex = -1;
           updateSelection();
           // Передаем фейковый объект item для выполнения действия "Помощь"
-          this.executeAction({ id: 'help/index', title: 'Справка/Помощь' }); 
+          this.executeAction({ 
+            id: 'help/index', 
+            title: 'Справка/Помощь',
+            params: JSON.stringify({ slides: SLIDES_MAIN })
+          }); 
         }
       });
 
@@ -208,7 +223,11 @@ Page(
               if (this.state.selectedIndex < questionIndex) {
                 itemToActivate = this.state.menuItems[this.state.selectedIndex];
               } else {
-                itemToActivate = { id: 'help/index', title: 'Справка/Помощь' };
+                itemToActivate = { 
+                  id: 'help/index', 
+                  title: 'Справка/Помощь',
+                  params: JSON.stringify({ slides: SLIDES_MAIN }) 
+                };
               }
 
               this.state.selectedIndex = -1;
@@ -227,10 +246,13 @@ Page(
     executeAction(item) {
       logger.log(`Активирован пункт: ${item.title}`);
       
-      push({
-        // url: "page/mandala"
-        url: `page/${item.id}`, 
-      });
+      const pushOptions = {
+        url: `page/${item.id}`,
+      };
+      if (item.params) {
+        pushOptions.params = item.params;
+      }
+      push(pushOptions);
     },
 
     updateStatusText(message) {

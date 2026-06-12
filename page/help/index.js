@@ -1,10 +1,4 @@
-import {
-  createWidget,
-  widget,
-  align,
-  text_style,
-  getTextLayout,
-} from "@zos/ui";
+import { createWidget, widget, align, text_style, getTextLayout } from "@zos/ui";
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
 import { Vibrator } from "@zos/sensor";
@@ -23,8 +17,6 @@ const logger = Logger.getLogger("main_help");
 
 const { width, height } = getDeviceInfo();
 const vibrator = new Vibrator();
-
-const WEBSITE_URL = "https://mandala.garageno9.site";
 
 const UI = {
   titleX: px(24),
@@ -46,25 +38,6 @@ const UI = {
   actionH: px(72),
   actionY: height - px(104),
 };
-
-const SLIDES = [
-  {
-    titleKey: "help_main_slide1_title",
-    textKey: "help_main_slide1_text",
-  },
-  {
-    titleKey: "help_main_slide2_title",
-    textKey: "help_main_slide2_text",
-  },
-  {
-    titleKey: "help_main_slide3_title",
-    textKey: "help_main_slide3_text",
-    action: {
-      labelKey: "help_main_slide3_action",
-      url: WEBSITE_URL,
-    },
-  },
-];
 
 function measureText(text, size, textWidth) {
   return getTextLayout(text, {
@@ -88,12 +61,34 @@ function hapticStrong() {
 
 Page(
   BasePage({
+    state: {
+      slides: [],
+    },
+
+    onInit(params) {
+      if (params) {
+        try {
+          const parsed = JSON.parse(params);
+          if (parsed.slides && Array.isArray(parsed.slides)) {
+            this.state.slides = parsed.slides;
+          }
+        } catch (e) {
+          logger.error("Failed to parse params", e);
+        }
+      }
+    },
+
     build() {
+      if (this.state.slides.length === 0) {
+        logger.error("No slides provided to help page");
+        return;
+      }
+
       setScrollMode({
         mode: SCROLL_MODE_SWIPER_HORIZONTAL,
         options: {
           width,
-          count: SLIDES.length,
+          count: this.state.slides.length,
         },
       });
 
@@ -109,13 +104,13 @@ Page(
         horizontal: true,
       });
 
-      SLIDES.forEach((slide, index) => {
+      this.state.slides.forEach((slide, index) => {
         this.buildSlide(slide, index);
       });
 
       onPageScrollDone(() => {
         const current = getSwiperIndex();
-        if (current === 3) {
+        if (current === this.state.slides.length - 1) {
           hapticStrong();
         } else {
           hapticSoft();
@@ -140,7 +135,7 @@ Page(
         x: offsetX + UI.titleX,
         y: UI.titleY,
         w: UI.titleW,
-        h: titleLayout.height,
+        h: px(80), //h: titleLayout.height,
         color: 0xffffff,
         text_size: UI.titleSize,
         text_style: text_style.WRAP,
@@ -148,6 +143,7 @@ Page(
         align_v: align.CENTER_V,
         text: title,
       });
+
 
       createWidget(widget.FILL_RECT, {
         x: offsetX + (width - UI.dividerW) / 2,

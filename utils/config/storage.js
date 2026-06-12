@@ -1,30 +1,28 @@
 import { LocalStorage } from '@zos/storage';
-import { log as Logger, px } from "@zos/utils";
+import { log as Logger } from "@zos/utils";
+import { STORAGE_KEYS } from './constants';
 
-const logger = Logger.getLogger("practice_screen");
+const logger = Logger.getLogger("storage");
+const storage = new LocalStorage();
 
-export default class Analytics {
+export default class AppStorage {
 
   static getInstallationId() {
-  // export function getInstallationId() {
-    const storage = new LocalStorage();
-    let installId = storage.getItem('app_install_id');
+    let installId = storage.getItem(STORAGE_KEYS.INSTALL_ID);
 
     if (!installId) {
       installId = 'usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
-      storage.setItem('app_install_id', installId);
+      storage.setItem(STORAGE_KEYS.INSTALL_ID, installId);
     }
-
     return installId;
   }
 
   static getPracticeDays(time) {
     // ZeppOS Time.Month возвращает месяц в диапазоне 1-12, а JavaScript Date - в диапазоне 0-11. Учитываем это при парсинге.
-    
-    const storage = new LocalStorage();
-    let lastMandalaDate = storage.getItem('mandalaDay') || null;
-    let streakDays = storage.getItem('streakDays') || 0;
-    let bestStreak = storage.getItem('bestStreak') || 0;
+    let lastMandalaDate = storage.getItem(STORAGE_KEYS.MANDALA_DAY) || null;
+    let streakDays = storage.getItem(STORAGE_KEYS.STREAK_DAYS) || 0;
+    let bestStreak = storage.getItem(STORAGE_KEYS.BEST_STREAK) || 0;
+
     if(lastMandalaDate == null) {
       return {
         streak: 0,
@@ -39,7 +37,6 @@ export default class Analytics {
     const year = parseInt(lastMandalaDate.substring(4, 8), 10);
 
     const jsDate = new Date(year, zeppMonth - 1, day);
-
     jsDate.setDate(jsDate.getDate() + 1);
 
     const expectedNextDayString =
@@ -59,5 +56,23 @@ export default class Analytics {
       isNextDay: expectedNextDayString === todayString,
       isSameDay: lastMandalaDate === todayString
     };
+  }
+
+  static getMandalaDay() {
+    return storage.getItem(STORAGE_KEYS.MANDALA_DAY);
+  }
+
+  static getMandalaPath() {
+    return storage.getItem(STORAGE_KEYS.MANDALA_PATH);
+  }
+
+  static setMandalaData(day, path) {
+    storage.setItem(STORAGE_KEYS.MANDALA_DAY, day);
+    storage.setItem(STORAGE_KEYS.MANDALA_PATH, path);
+  }
+
+  static setStreakData(streak, best) {
+    storage.setItem(STORAGE_KEYS.STREAK_DAYS, streak);
+    storage.setItem(STORAGE_KEYS.BEST_STREAK, best);
   }
 }
