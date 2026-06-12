@@ -1,0 +1,2 @@
+# Daily Mandala
+It's a free Zepp OS smartwatch app that shows a new mandala every day, generated from the current date. It gives users a simple daily practice of returning to focus, calm, and inner balance — and connects them to the Soul Mandala website, where they can mint their personal Birth Mandala as an NFT.

@@ -1,0 +1,95 @@
+msgid "app_name"
+msgstr "Daily Mandala"
+
+msgid "practice"
+msgstr "Today"
+
+msgid "open"
+msgstr "Open"
+
+msgid "how_to"
+msgstr "How to"
+
+msgid "why"
+msgstr "Why"
+
+msgid "collection"
+msgstr "Collection"
+
+msgid "go_mandala"
+msgstr "Mandala day"
+
+msgid "get_mandala"
+msgstr "Get a mandala"
+
+// practice page
+
+msgid "start"
+msgstr "Begin"
+
+msgid "start_subtitle_1"
+msgstr "with simple presence"
+
+msgid "start_subtitle_2"
+msgstr "with just 3 minutes"
+
+msgid "start_subtitle_3"
+msgstr "by tuning out the noise"
+
+msgid "start_subtitle_0"
+msgstr "with a soft reset"
+
+msgid "loading_mandala"
+msgstr "Determining the day's energy"
+
+msgid "done_today"
+msgstr "Done today
+
+msgid "not_yet_today"
+msgstr "Not yet today"
+
+msgid  "err_connection_to_the_phone"
+msgstr "Error connecting\nto the phone"
+
+msgid "streak"
+msgstr "Streak"
+
+msgid "best"
+msgstr "Best"
+
+// general help
+msgid "help_main_slide1_title"
+msgstr "Daily Practice"
+
+msgid "help_main_slide1_text"
+msgstr "Practice is open to everyone.\n\nEvery day brings a new mandala based on today's date.\n\nUse it for a short daily ritual and keep your practice journal."
+
+msgid "help_main_slide2_title"
+msgstr "Personal Collection"
+
+msgid "help_main_slide2_text"
+msgstr "Collection shows your personal mandalas as on-chain NFTs.\n\nA birth date or another meaningful date can exist in one copy only.\n\nEach mandala belongs to one owner."
+
+msgid "help_main_slide3_title"
+msgstr "Claim Yours"
+
+msgid "help_main_slide3_text"
+msgstr "Mint your personal mandala on the website.\n\nConnect your wallet, link it with your watch, and unlock your collection."
+
+msgid "help_main_slide3_action"
+msgstr "Scan to mint & link"
+
+msgid "help_qr_title"
+msgstr "Mint & Link"
+
+msgid "help_qr_intro"
+msgstr "Scan with your phone to open the website."
+
+msgid "help_qr_domain"
+msgstr "mandala.garageno9.site"
+
+msgid "help_qr_text"
+msgstr "Mint your mandala, connect your wallet, then link this watch."
+
+msgid "common_back"
+msgstr "Back"

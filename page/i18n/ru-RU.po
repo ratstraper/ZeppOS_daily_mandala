@@ -1,0 +1,100 @@
+msgid "app_name"
+msgstr "Daily Mandala"
+
+msgid "practice"
+msgstr "Практика"
+
+msgid "open"
+msgstr "Открыть"
+
+msgid "how_to"
+msgstr "How to"
+
+msgid "why"
+msgstr "Why"
+
+msgid "collection"
+msgstr "Коллекция"
+
+msgid "go_mandala"
+msgstr "Мандала дня"
+
+msgid "get_mandala"
+msgstr "Создать"
+
+msgid "start"
+msgstr "Начать"
+
+msgid "start_subtitle_1"
+msgstr "простое присутствие"
+
+msgid "start_subtitle_2"
+msgstr "всего лишь 3 минуты"
+
+msgid "start_subtitle_3"
+msgstr "чтобы приглушить шум"
+
+msgid "start_subtitle_0"
+msgstr "небольшой перезапуск"
+
+msgid "loading_mandala"
+msgstr "Определяем энергии дня"
+
+msgid "done_today"
+msgstr "Сегодня выполнено"
+
+msgid "not_yet_today"
+msgstr "Сегодня не было"
+
+msgid  "err_connection_to_the_phone"
+msgstr "Ошибка соединения\nс телефоном"
+
+msgid "streak"
+msgstr "Серия"
+
+msgid "best"
+msgstr "Лучший"
+
+// general help
+msgid "help_main_slide1_title"
+msgstr "Ежедневная практика"
+
+msgid "help_main_slide1_text"
+msgstr "Практика открыта для всех.\n\nКаждый день появляется новая мандала по текущей дате.\n\nИспользуйте её для короткого ежедневного ритуала и ведите журнал практики."
+
+msgid "help_main_slide2_title"
+msgstr "Личная коллекция"
+
+msgid "help_main_slide2_text"
+msgstr "Коллекция показывает ваши личные мандалы как on-chain NFT.\n\nДата рождения или другая значимая дата может существовать только в одном экземпляре.\n\nКаждая мандала принадлежит только одному владельцу."
+
+msgid "help_main_slide3_title"
+msgstr "Получите свою"
+
+msgid "help_main_slide3_text"
+msgstr "Сминтите личную мандалу на сайте.\n\nПодключите кошелёк, свяжите его с часами и откройте свою коллекцию."
+
+msgid "help_main_slide3_action"
+msgstr "Сканировать для минта"
+
+msgid "help_qr_title"
+msgstr "Минт и привязка"
+
+msgid "help_qr_intro"
+msgstr "Сканируйте телефоном, чтобы открыть сайт."
+
+msgid "help_qr_domain"
+msgstr "mandala.garageno9.site"
+
+msgid "help_qr_text"
+msgstr "Сминтите мандалу, подключите кошелёк, затем свяжите эти часы."
+
+msgid "common_back"
+msgstr "Назад"
+
+//practice help
+msgid "help_practice_slide1_title"
+msgstr "Daily Practice"
+
+msgid "help_practice_slide1_text"
+msgstr "Each day has its own mandala.\nOpen it. Breathe with it.\nEven 3 minutes is enough.\n\nStreak — your current\nseries of daily sessions.\nBest — your personal record."
