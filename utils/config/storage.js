@@ -51,7 +51,7 @@ export default class AppStorage {
 
     logger.log(`Last mandala date: ${lastMandalaDate}, expected next day: ${expectedNextDayString}, today: ${todayString}, streak: ${streakDays}, best: ${bestStreak}, isNextDay: ${expectedNextDayString === todayString}, isSameDay: ${lastMandalaDate === todayString}`);
     return {
-      streak: streakDays,
+      streak: expectedNextDayString === todayString ? streakDays : 0,
       best: bestStreak,
       isNextDay: expectedNextDayString === todayString,
       isSameDay: lastMandalaDate === todayString
