@@ -4,8 +4,7 @@ import { log as Logger, px } from "@zos/utils";
 import { BasePage } from "@zeppos/zml/base-page";
 import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@zos/interaction';
 import { getDeviceInfo } from "@zos/device";
-import { Time } from "@zos/sensor";
-import { getSystemInfo } from "@zos/settings";
+// import { getSystemInfo } from "@zos/settings";
 import { push } from '@zos/router';
 import { getProfile, GENDER_MALE, GENDER_FEMALE } from "@zos/user";
 import AppStorage from "../../utils/config/storage.js";
@@ -19,7 +18,8 @@ import {
 } from "@zos/display";
 
 import { NORMAL_COLOR, PRESSED_COLOR, SELECTED_COLOR } from "zosLoader:./index.[pf].layout.js";
-import { WEBSITE_URL, STORAGE_KEYS } from "../../utils/config/constants";
+import { TITLE } from "zosLoader:./../index.[pf].layout.js";
+import { WEBSITE_URL, STORAGE_KEYS } from "../../utils/config/constants.js";
 
 const logger = Logger.getLogger("practice_screen");
 
@@ -28,30 +28,9 @@ const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
 const SCREEN_ERROR = "SCREEN_ERROR";
 
-const deviceInfo = getDeviceInfo();
-const systemInfo = getSystemInfo() || {};
+import { width, height, platform } from "../../utils/config/device";
 const profile = getProfile() || {};
-
-const {
-  width,
-  height,
-  screenShape,
-  deviceName = "?",
-  productId = 0,
-  productVer = 0,
-  deviceSource = 0,
-} = deviceInfo;
-
-const {
-  osVersion = "?",
-  firmwareVersion = "?",
-  sdkVersion = "?",
-  minAPI = "?"
-} = systemInfo;
-
 const { age, gender, region } = profile;
-
-const platform = `${deviceName}/${osVersion}/${minAPI}, FV:${firmwareVersion}, SDK:${sdkVersion}, ${productId}.${productVer}.${deviceSource}`;
 const squareSize = Math.min(width, height) * 1.0;
 
 const SLIDES_PRACTICE = [
@@ -108,7 +87,7 @@ Page(
     },
 
     onInit() {
-      const { streak, best, isNextDay, isSameDay } = AppStorage.getPracticeDays(new Time());
+      const { streak, best, isNextDay, isSameDay } = AppStorage.getPracticeDays();
       this.state.progress = {
         streak: streak,
         best: best,
@@ -178,16 +157,7 @@ Page(
 
     buildTitle() {
       this.widgets.title = hmUI.createWidget(hmUI.widget.TEXT, {
-        x: 0,
-        y: this.layout.titleY,
-        w: width,
-        h: this.layout.titleH,
-        color: 0xffffff,
-        text_size: px(40),
-        text_style: hmUI.text_style.NONE,
-        align_h: hmUI.align.CENTER_H,
-        align_v: hmUI.align.CENTER_V,
-        text: i18n("practice"),
+        ...TITLE(this.layout, i18n("practice") || "Practice"),
       });
     },
 
@@ -252,11 +222,10 @@ Page(
         text: i18n("open")
       });
 
-
       // 6. Дополнительный текст
-      const time = new Time();
+      const rnd = Math.floor(Math.random() * 4);
       let subtitle = "";
-      switch(time.getSeconds() % 4) {
+      switch(rnd) {
         case 0: 
           subtitle = i18n("start_subtitle_0");
           break;
@@ -543,11 +512,7 @@ Page(
     fetchData() {
       logger.log("Sending GET_MANDALA request");
 
-      const time = new Time();
-      const mandalaDay =
-        `${time.getDate()}`.padStart(2, "0") +
-        `${time.getMonth()}`.padStart(2, "0") +
-        `${time.getFullYear()}`;
+      const mandalaDay = AppStorage.getMandalaDayString();
       const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
 
       this.request({
@@ -585,16 +550,17 @@ Page(
           //   fs.writeSync({ fd, buffer: fileData });
           //   fs.closeSync({ fd });
           // } else {
+            
             AppStorage.setMandalaData(mandalaDay, filePath);
           // }
 
-
-          this.state.progress.streak = this.state.progress.doneToday ? this.state.progress.streak : this.state.progress.streak + 1;
-          this.state.progress.best = Math.max(this.state.progress.best, this.state.progress.streak);
-          AppStorage.setStreakData(this.state.progress.streak, this.state.progress.best);
-
-          this.state.progress.doneToday = true;
-
+          const { streak, best, isNextDay, isSameDay } = AppStorage.getPracticeDays();
+          this.state.progress = {
+            streak: streak,
+            best: best,
+            doneToday: isSameDay,
+            isNextDay: isNextDay,
+          };
           this.refreshProgress();
 
           this.setScreenState(SCREEN_RESULT, { filePath });

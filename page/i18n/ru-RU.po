@@ -25,6 +25,9 @@ msgstr "Создать"
 msgid "start"
 msgstr "Начать"
 
+msgid "start_subtitle_0"
+msgstr "небольшой перезапуск"
+
 msgid "start_subtitle_1"
 msgstr "простое присутствие"
 
@@ -33,9 +36,6 @@ msgstr "всего лишь 3 минуты"
 
 msgid "start_subtitle_3"
 msgstr "чтобы приглушить шум"
-
-msgid "start_subtitle_0"
-msgstr "небольшой перезапуск"
 
 msgid "loading_mandala"
 msgstr "Определяем энергии дня"

@@ -8,17 +8,6 @@ import {
 } from "../utils/config/constants";
 import { DEVICE_WIDTH } from "../utils/config/device";
 
-export const FETCH_BUTTON = {
-  x: (DEVICE_WIDTH - px(360)) / 2,
-  y: px(300),
-  w: px(360),
-  h: px(80),
-  text_size: px(36),
-  radius: px(12),
-  normal_color: DEFAULT_COLOR,
-  press_color: DEFAULT_COLOR_TRANSPARENT,
-  text: i18n("go_mandala"),
-};
 
 export const FETCH_RESULT_TEXT = {
   x: px(56),
@@ -30,4 +19,19 @@ export const FETCH_RESULT_TEXT = {
   align_h: hmUI.align.CENTER_H,
   align_v: hmUI.align.CENTER_V,
   text_style: hmUI.text_style.WRAP,
+};
+
+export const TITLE = (layout, text) => {
+  return {
+    x: 0,
+    y: px(38),      //layout.titleY, 40
+    w: DEVICE_WIDTH,
+    h: px(56),      //layout.titleH, 60
+    color: 0xffffff,
+    text_size: px(40),
+    text_style: hmUI.text_style.NONE,
+    align_h: hmUI.align.CENTER_H,
+    align_v: hmUI.align.CENTER_V,
+    text: text,
+  };
 };

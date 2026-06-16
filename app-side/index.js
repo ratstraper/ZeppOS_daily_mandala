@@ -45,7 +45,7 @@ async function fetchEmulatorData(day, info, size, res) {
 /**
  * For smartphone
  */
-function fetchData(day, info, size, age, gender, region, usr, res) {
+function getMandala(day, info, size, age, gender, region, usr, res) {
   logger.log('Starting file download...', day);
 
   const downloadTask = network.downloader.downloadFile({
@@ -101,6 +101,10 @@ function fetchData(day, info, size, age, gender, region, usr, res) {
   };
 }
 
+function getCollection(info, size, usr, res) {
+  res(null, { result: "Ok", collection: [{"day":"15011939", "name":"Ivan", "id":15011939}, {"day":"11111111", "name":"Thering", "id":11111111}]});
+}
+
 AppSideService(
   BaseSideService({
     onInit() {
@@ -110,10 +114,12 @@ AppSideService(
     onRequest(req, res) {
       logger.log("=====> Received method:", req.method);
       if (req.method === "GET_MANDALA") {
-        fetchData(req.day, req.info, req.size, req.age, req.gender, req.region, req.usr, res);
+        getMandala(req.day, req.info, req.size, req.age, req.gender, req.region, req.usr, res);
         // fetchEmulatorData(req.day, req.info, req.size, res);
       } else if(req.method === "OPEN_MANDALA") {
         //Отправить запрос чтобы зафиксировать открытие мандалы (для аналитики)
+      } else if(req.method === "GET_COLLECTION") {
+        getCollection(req.info, req.size, req.usr, res)
       }
     }
   })

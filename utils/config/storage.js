@@ -1,5 +1,6 @@
 import { LocalStorage } from '@zos/storage';
 import { log as Logger } from "@zos/utils";
+import { Time } from "@zos/sensor";
 import { STORAGE_KEYS } from './constants';
 
 const logger = Logger.getLogger("storage");
@@ -17,7 +18,25 @@ export default class AppStorage {
     return installId;
   }
 
-  static getPracticeDays(time) {
+  static getMandalaDayString() {
+    const time = new Time();
+    return (
+      `${time.getDate()}`.padStart(2, "0") +
+      `${time.getMonth()}`.padStart(2, "0") +
+      `${time.getFullYear()}`
+    );
+  }
+
+  static addPracticeDays() {
+    let time = new Time();
+    const { streak, best, isNextDay, isSameDay } = this.getPracticeDays(time);
+    if(!isSameDay) {
+      const newStreak = streak + 1;
+      this.setStreakData(newStreak, Math.max(best, newStreak));
+    }
+  }
+
+  static getPracticeDays(time = new Time()) {
     // ZeppOS Time.Month возвращает месяц в диапазоне 1-12, а JavaScript Date - в диапазоне 0-11. Учитываем это при парсинге.
     let lastMandalaDate = storage.getItem(STORAGE_KEYS.MANDALA_DAY) || null;
     let streakDays = storage.getItem(STORAGE_KEYS.STREAK_DAYS) || 0;
@@ -39,7 +58,7 @@ export default class AppStorage {
     const jsDate = new Date(year, zeppMonth - 1, day);
     jsDate.setDate(jsDate.getDate() + 1);
 
-    const expectedNextDayString =
+    const afterStreakeDay =
       `${jsDate.getDate()}`.padStart(2, "0") +
       `${jsDate.getMonth() + 1}`.padStart(2, "0") + 
       `${jsDate.getFullYear()}`;
@@ -49,11 +68,10 @@ export default class AppStorage {
       `${time.getMonth()}`.padStart(2, "0") + 
       `${time.getFullYear()}`;
 
-    logger.log(`Last mandala date: ${lastMandalaDate}, expected next day: ${expectedNextDayString}, today: ${todayString}, streak: ${streakDays}, best: ${bestStreak}, isNextDay: ${expectedNextDayString === todayString}, isSameDay: ${lastMandalaDate === todayString}`);
     return {
-      streak: expectedNextDayString === todayString ? streakDays : 0,
+      streak: ((afterStreakeDay === todayString) || (lastMandalaDate === todayString)) ? streakDays : 0,
       best: bestStreak,
-      isNextDay: expectedNextDayString === todayString,
+      isNextDay: afterStreakeDay === todayString,
       isSameDay: lastMandalaDate === todayString
     };
   }
@@ -67,6 +85,7 @@ export default class AppStorage {
   }
 
   static setMandalaData(day, path) {
+    this.addPracticeDays();
     storage.setItem(STORAGE_KEYS.MANDALA_DAY, day);
     storage.setItem(STORAGE_KEYS.MANDALA_PATH, path);
   }

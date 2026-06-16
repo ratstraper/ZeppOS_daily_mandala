@@ -12,6 +12,7 @@ import {
   FETCH_BUTTON,
   FETCH_RESULT_TEXT,
 } from "zosLoader:./index.[pf].layout.js";
+import { TITLE } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
 
@@ -42,23 +43,15 @@ Page(
       menuItems: []      // Данные меню
     },
     widgets: {
+      title: null,
       text: null,
       btn: null,
       questionImg: null
     },
     build() {
-      hmUI.createWidget(hmUI.widget.TEXT, {
-        x: 0,
-        y: px(40),
-        w: DEVICE_WIDTH,
-        h: px(60),
-        color: 0xffffff,
-        text_size: px(40),
-        text_style: hmUI.text_style.NONE,
-        align_h: hmUI.align.CENTER_H,
-        align_v: hmUI.align.CENTER_V,
-        text: i18n("app_name"),
-      });
+      this.layout = this.createLayout();
+
+      this.buildTitle();
 
       this.state.menuItems = [
         { id: 'practice/index', title: i18n("practice"), icon: 'icons/ic_daily.png' },
@@ -242,6 +235,23 @@ Page(
       });
     },
     
+    createLayout() {
+      const titleY = px(38);
+      const titleH = px(56);
+
+      return {
+        titleY,
+        titleH
+      };
+    },
+
+    
+    buildTitle() {
+      this.widgets.title = hmUI.createWidget(hmUI.widget.TEXT, {
+        ...TITLE(this.layout, i18n("app_name") || "Daily Mandala"),
+      });
+    },
+
     // 5. Выделяем логику активации пункта в отдельный метод
     executeAction(item) {
       logger.log(`Активирован пункт: ${item.title}`);

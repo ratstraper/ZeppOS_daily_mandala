@@ -8,18 +8,6 @@ import {
 } from "../../utils/config/constants";
 import { DEVICE_WIDTH } from "../../utils/config/device";
 
-export const FETCH_BUTTON = {
-  x: (DEVICE_WIDTH - px(360)) / 2,
-  y: px(300),
-  w: px(360),
-  h: px(80),
-  text_size: px(36),
-  radius: px(12),
-  normal_color: DEFAULT_COLOR,
-  press_color: DEFAULT_COLOR_TRANSPARENT,
-  text: i18n("get_mandala"),
-};
-
 export const FETCH_RESULT_TEXT = {
   x: px(56),
   y: px(74),
