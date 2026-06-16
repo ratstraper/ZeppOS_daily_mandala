@@ -9,7 +9,6 @@ import { DEVICE_WIDTH, DEVICE_HEIGHT } from '../utils/config/device'
 import { WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR } from '../utils/config/constants';
 
 import {
-  FETCH_BUTTON,
   FETCH_RESULT_TEXT,
 } from "zosLoader:./index.[pf].layout.js";
 import { TITLE } from "zosLoader:./index.[pf].layout.js";
@@ -58,13 +57,6 @@ Page(
         { id: 'mandala/index', title: i18n("collection"), icon: 'icons/ic_collection.png' },      
       ];
 
-      // 3. Настройки геометрии и отступов
-      const startY = px(175);           // Отступ сверху (под заголовком)
-      const buttonHeight = px(126);      // Высота одной плашки
-      const spacing = px(25);           // Расстояние между плашками
-      const startX = px(40);            // Центрирование (40 пикселей от каждого края)
-      const buttonWidth = DEVICE_WIDTH - (2 * startX); // Ширина плашки (экран минус отступы по бокам)
-
       const questionIndex = this.state.menuItems.length;
 
 
@@ -91,11 +83,11 @@ Page(
 
         if (index < questionIndex) {
           // Это стандартная кнопка меню
-          itemY = startY + index * (buttonHeight + spacing);
-          itemH = buttonHeight;
+          itemY = this.layout.startY + index * (this.layout.buttonHeight + this.layout.spacing);
+          itemH = this.layout.buttonHeight;
         } else {
           // Это наша круглая кнопка с вопросом (вычисляем ее координаты)
-          itemY = startY + questionIndex * (buttonHeight + spacing) + spacing;
+          itemY = this.layout.startY + questionIndex * (this.layout.buttonHeight + this.layout.spacing) + this.layout.spacing;
           itemH = px(64); 
         }
         
@@ -110,31 +102,31 @@ Page(
 
       // 4. Отрисовываем кнопки в цикле
       this.state.menuItems.forEach((item, index) => {
-        const yPos = startY + index * (buttonHeight + spacing);
+        const yPos = this.layout.startY + index * (this.layout.buttonHeight + this.layout.spacing);
 
         const btnGroup = hmUI.createWidget(hmUI.widget.GROUP, {
-          x: startX, y: yPos, w: buttonWidth, h: buttonHeight
+          x: this.layout.startX, y: yPos, w: this.layout.buttonWidth, h: this.layout.buttonHeight
         });
 
         const bgRect = btnGroup.createWidget(hmUI.widget.FILL_RECT, {
-          x: 0, y: 0, w: buttonWidth, h: buttonHeight,
+          x: 0, y: 0, w: this.layout.buttonWidth, h: this.layout.buttonHeight,
           color: NORMAL_COLOR, radius: px(63)       
         });
         
         this.state.bgRects.push(bgRect);
 
         btnGroup.createWidget(hmUI.widget.IMG, {
-          x: px(24), y: (buttonHeight - px(60)) / 2, w: px(60), h: px(60), src: item.icon
+          x: px(24), y: (this.layout.buttonHeight - px(60)) / 2, w: px(60), h: px(60), src: item.icon
         });
 
         btnGroup.createWidget(hmUI.widget.TEXT, {
-          x: px(104), y: 0, w: buttonWidth - px(140), h: buttonHeight,
+          x: px(104), y: 0, w: this.layout.buttonWidth - px(140), h: this.layout.buttonHeight,
           color: 0xffffff, text_size: px(36), align_h: hmUI.align.LEFT, align_v: hmUI.align.CENTER_V,
           text: item.title
         });
 
         btnGroup.createWidget(hmUI.widget.IMG, {
-          x: buttonWidth - px(84), y: (buttonHeight - px(64)) / 2, w: px(64), h: px(64), src: 'icons/arrow_right.tga' 
+          x: this.layout.buttonWidth - px(84), y: (this.layout.buttonHeight - px(64)) / 2, w: px(64), h: px(64), src: 'icons/arrow_right.tga' 
         });
 
         // --- Сенсорная логика синхронизируется с индексом ---
@@ -155,7 +147,7 @@ Page(
         });
       });
 
-      const questionY = startY + questionIndex * (buttonHeight + spacing) + spacing;
+      const questionY = this.layout.startY + questionIndex * (this.layout.buttonHeight + this.layout.spacing) + this.layout.spacing;
       
       this.widgets.questionImg = hmUI.createWidget(hmUI.widget.IMG, {
         x: (DEVICE_WIDTH - px(64)) / 2,
@@ -238,10 +230,20 @@ Page(
     createLayout() {
       const titleY = px(38);
       const titleH = px(56);
+      const startX = px(40);            // Центрирование (40 пикселей от каждого края)      
+      const startY = px(175);           // Отступ сверху (под заголовком)
+      const buttonHeight = px(126);      // Высота одной плашки
+      const spacing = px(25);           // Расстояние между плашками
+      const buttonWidth = DEVICE_WIDTH - (2 * startX); // Ширина плашки (экран минус отступы по бокам)
 
       return {
         titleY,
-        titleH
+        titleH,
+        startX,
+        startY,
+        buttonHeight,
+        spacing,
+        buttonWidth
       };
     },
 
