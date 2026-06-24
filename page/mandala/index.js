@@ -1,271 +1,178 @@
 import * as hmUI from "@zos/ui";
-import { getText as i18n} from "@zos/i18n";
+import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
-import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
-import AppStorage from '../../utils/config/storage.js';
-import LoadingAnimationComponent from '../../utils/components/LoadingAnimationComponent.js';
-import { NORMAL_COLOR, PRESSED_COLOR } from "../../utils/config/constants";
+import { getDeviceInfo } from "@zos/device";
+import { push } from '@zos/router';
+import { getProfile, GENDER_MALE, GENDER_FEMALE } from "@zos/user";
+import AppStorage from "../../utils/config/storage.js";
+import LoadingAnimationComponent from "../../utils/components/LoadingAnimationComponent.js";
+import * as fs from "@zos/fs";
+import {
+    setPageBrightTime,
+    resetPageBrightTime,
+    pauseDropWristScreenOff,
+    resetDropWristScreenOff,
+} from "@zos/display";
 
-const logger = Logger.getLogger("mandala_day");
+import { WEBSITE_URL, STORAGE_KEYS } from "../../utils/config/constants.js";
 
-import { width, height, screenShape, platform } from "../../utils/config/device";
+const logger = Logger.getLogger("practice_screen");
 
+const SCREEN_IDLE = "SCREEN_IDLE";
 const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
 const SCREEN_ERROR = "SCREEN_ERROR";
 
-import {
-  MENU_BUTTON
-} from "zosLoader:./index.[pf].layout.js";
-import {TITLE} from "zosLoader:./../index.[pf].layout.js";
+import { width, height, screenShape, platform } from "../../utils/config/device";
+const profile = getProfile() || {};
+const { age, gender, region } = profile;
+const squareSize = Math.min(width, height) * 1.0;
 
 Page(
-  BasePage({
-    state: {
-      screenState: SCREEN_LOADING,
-    },
-    widgets: {
-      title: null,
-      
-      loadingGroup: null,
-      errorGroup: null,
-      
-      loadingAnim: null,
-      loadingText: null,
-      errorText: null,
-      
-      listItems: [],
-      emptyText: null,
-    },
-    
-    build() {
-      this.layout = this.createLayout();
-      this.widgets.loadingAnim = new LoadingAnimationComponent(hmUI);
+    BasePage({
+        state: {
+            screenState: SCREEN_IDLE,
+        },
+        widgets: {
+            loadingAnim: null,
+        },
 
-      this.buildTitle();
-      // logger.log(`Title: ${this.widgets.title.getProperty(hmUI.prop.H)}, ${this.widgets.title.getProperty(hmUI.prop.W)}`);
+        onInit() {
+        },
 
-      this.buildLoadingGroup();
-      this.buildErrorGroup();
+        build() {
+            this.layout = this.createLayout();
 
-      this.setScreenState(SCREEN_LOADING);
-      this.getCollection();
-    },
+            this.widgets.loadingAnim = new LoadingAnimationComponent(hmUI);
 
-    createLayout() {
-      // Точные отступы как в page/practice/index.js и page/index.js
-      const titleY = px(38);
-      const titleH = px(56);
+            // this.buildTitle();
+            // this.buildIdleGroup();
+            // this.buildLoadingGroup();
+            // this.buildResultGroup();
 
-      const loadingAnimSize = px(48);
-      const loadingAnimX = (width - loadingAnimSize) / 2;
-      const loadingAnimY = screenShape === 1 ? (height - loadingAnimSize) / 2 - px(36) : px(140);
-      const loadingTextY = loadingAnimY + loadingAnimSize + px(22);
+            // this.refreshProgress();
+            // this.setScreenState(SCREEN_IDLE);
+            // this.initKeyNavigation();
+        },
 
-      return {
-        titleY,
-        titleH,
-        loadingAnimX,
-        loadingAnimY,
-        loadingAnimSize,
-        loadingTextY,
-      };
-    },
+        createLayout() {
+            const heroX = px(40);
+            const heroY = px(138);
+            const heroW = width - px(80);
+            const heroH = px(160);
 
-    buildTitle() {
-      this.widgets.title =  hmUI.createWidget(hmUI.widget.TEXT, {
-        ...TITLE(this.layout, i18n("collection") || "Collection"),
-      });
-    },
+            const progressY = heroY + heroH + px(26);
+            const statusY = progressY + px(42);
+            const helpY = statusY + px(54);
 
+            const loadingAnimSize = px(48);
+            const loadingAnimX = (width - loadingAnimSize) / 2;
+            const loadingAnimY =
+                screenShape === 1 ? (height - loadingAnimSize) / 2 - px(36) : px(140);
 
-    buildLoadingGroup() {
-      this.widgets.loadingGroup = hmUI.createWidget(hmUI.widget.GROUP, {
-        x: 0, y: 0, w: width, h: height,
-      });
+            const loadingTextY = loadingAnimY + loadingAnimSize + px(22);
 
-      this.widgets.loadingText = this.widgets.loadingGroup.createWidget(
-        hmUI.widget.TEXT, {
-          x: px(48), y: this.layout.loadingTextY,
-          w: width - px(96), h: px(72),
-          color: 0xbdbdbd, text_size: px(24),
-          text_style: hmUI.text_style.WRAP,
-          align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V,
-          text: i18n("loading") || "Loading...",
-        }
-      );
-    },
+            const resultX = (width - squareSize) / 2;
+            const resultY =
+                screenShape === 1 ? (height - squareSize) / 2 : px(40);
 
-    buildErrorGroup() {
-      this.widgets.errorGroup = hmUI.createWidget(hmUI.widget.GROUP, {
-        x: 0, y: 0, w: width, h: height,
-      });
+            return {
+                heroX,
+                heroY,
+                heroW,
+                heroH,
+                progressY,
+                statusY,
+                helpY,
+                loadingAnimX,
+                loadingAnimY,
+                loadingAnimSize,
+                loadingTextY,
+                resultX,
+                resultY,
+            };
+        },
 
-      this.widgets.errorText = this.widgets.errorGroup.createWidget(
-        hmUI.widget.TEXT, {
-          x: px(48), y: this.layout.loadingTextY,
-          w: width - px(96), h: px(90),
-          color: 0xbdbdbd, text_size: px(24),
-          text_style: hmUI.text_style.WRAP,
-          align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V,
-          text: "",
-        }
-      );
-    },
+        fetchData() {
+            logger.log("Sending GET_MANDALA request");
 
-    setVisible(widget, visible) {
-      if (!widget) return;
-      widget.setProperty(hmUI.prop.VISIBLE, !!visible);
-    },
+            const mandalaDay = AppStorage.getMandalaDayString();
+            const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
 
-    setText(widget, text) {
-      if (!widget) return;
-      widget.setProperty(hmUI.prop.TEXT, String(text ?? ""));
-    },
+            this.request({
+                method: "GET_MANDALA",
+                day: mandalaDay,
+                info: platform,
+                size: squareSize,
+                age,
+                gender:
+                    gender === GENDER_MALE
+                        ? "M"
+                        : gender === GENDER_FEMALE
+                            ? "F"
+                            : "U",
+                region,
+                usr: userId,
+            }).then((data) => {
+                const { result = {}, isEmulatorMode, filePath, fileData } = data;
 
-    setScreenState(nextState, payload = {}) {
-      this.state.screenState = nextState;
+                if (result !== "Ok") {
+                    logger.log("Phone returned error:", result);
+                    this.setScreenState(SCREEN_ERROR, {
+                        message: i18n("err_connection_to_the_phone"),
+                    });
+                    return;
+                }
 
-      const isLoading = nextState === SCREEN_LOADING;
-      const isResult = nextState === SCREEN_RESULT;
-      const isError = nextState === SCREEN_ERROR;
+                // if (isEmulatorMode) {
+                //   logger.log("Saving file in emulator mode");
+                //   const fd = fs.openSync({
+                //     path: filePath,
+                //     flag: fs.O_RDWR | fs.O_CREAT | fs.O_TRUNC,
+                //   });
+                //   fs.writeSync({ fd, buffer: fileData });
+                //   fs.closeSync({ fd });
+                // } else {
 
-      this.setVisible(this.widgets.loadingGroup, isLoading);
-      this.setVisible(this.widgets.errorGroup, isError);
+                AppStorage.setMandalaData(mandalaDay, filePath);
+                // }
 
-      if (isLoading) {
-        this.widgets.loadingAnim.show(
-          this.layout.loadingAnimX,
-          this.layout.loadingAnimY,
-          this.layout.loadingAnimSize,
-          this.layout.loadingAnimSize
-        );
-      } else {
-        this.widgets.loadingAnim.delete();
-      }
+                const { streak, best, isNextDay, isSameDay } = AppStorage.getPracticeDays();
+                this.state.progress = {
+                    streak: streak,
+                    best: best,
+                    doneToday: isSameDay,
+                    isNextDay: isNextDay,
+                };
+                this.refreshProgress();
 
-      if (isError) {
-        this.setText(this.widgets.errorText, payload.message || i18n("err_connection_to_the_phone"));
-      }
+                this.setScreenState(SCREEN_RESULT, { filePath });
+                logger.log(`Storage: ${this.state.progress.streak} days, best: ${this.state.progress.best}, isNextDay: ${this.state.progress.isNextDay}, doneToday: ${this.state.progress.doneToday}`);
+            })
+                .catch((err) => {
+                    logger.log("Network/BLE error:", err);
+                    this.setScreenState(SCREEN_ERROR, {
+                        message: i18n("err_connection_to_the_phone"),
+                    });
+                });
+        },
 
-      if (isResult) {
-        this.renderCollection(payload.collection);
-      } else {
-        this.clearCollection();
-      }
-    },
+        keepScreenAwake(isAwake) {
+            if (isAwake) {
+                setPageBrightTime({ brightTime: 0 });
+                pauseDropWristScreenOff({ duration: 0 });
+            } else {
+                resetPageBrightTime();
+                resetDropWristScreenOff();
+            }
+        },
 
-    getCollection() {
-      logger.log('Sending GET_COLLECTION request to the phone...');
-      
-      const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
-      
-      this.request({
-        method: "GET_COLLECTION",
-        info: platform,
-        usr: userId
-      })
-      .then((data) => {
-        const { result = {}, collection = []} = data; //{ result: "Ok", collection: [{"day":"15011939", "name":"Ivan", "id":15011939}, {"day":"11111111", "name":"Thering", "id":11111111}]}
-        
-        if (result === "Ok") {
-            logger.log(`Received collection from phone:`, collection);
-            this.setScreenState(SCREEN_RESULT, { collection });
-        } else {
-          logger.log("Error from phone:", result);
-          this.setScreenState(SCREEN_ERROR, { message: i18n("err_connection_to_the_phone") || "Error connecting\nto the phone" });
-        }
-      })
-      .catch((err) => {
-        logger.log("Network/BLE error:", err);
-        this.setScreenState(SCREEN_ERROR, { message: i18n("err_connection_to_the_phone") || "Error connecting\nto the phone" });
-      });
-    },
-
-    clearCollection() {
-      if (this.widgets.listItems && this.widgets.listItems.length > 0) {
-        this.widgets.listItems.forEach(widget => {
-          hmUI.deleteWidget(widget);
-        });
-        this.widgets.listItems = [];
-      }
-      if (this.widgets.emptyText) {
-        hmUI.deleteWidget(this.widgets.emptyText);
-        this.widgets.emptyText = null;
-      }
-    },
-
-    renderCollection(collection) {
-      this.clearCollection();
-
-      if (!collection || collection.length === 0) {
-        this.widgets.emptyText = hmUI.createWidget(hmUI.widget.TEXT, {
-          x: px(40), y: (height - px(100)) / 2, w: width - px(80), h: px(100),
-          color: 0xffffff, text_size: px(28), text_style: hmUI.text_style.WRAP,
-          align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V,
-          text: i18n("empty_collection") || "Collection is empty",
-        });
-        return;
-      }
-
-      const startY = px(175); // Сместили вниз, чтобы не перекрывать заголовок px(38) + px(56) + margin
-      const itemHeight = px(126);
-      const spacing = px(25);
-      const startX = px(40);
-      const itemWidth = width - (startX * 2);
-
-      collection.forEach((item, index) => {
-        const yPos = startY + index * (itemHeight + spacing);
-
-        // Парсинг даты (предполагается формат DDMMYYYY, например 15011939)
-        let formattedDate = item.day;
-        if (item.day && item.day.length === 8) {
-          formattedDate = `${item.day.substring(0, 2)}.${item.day.substring(2, 4)}.${item.day.substring(4, 8)}`;
-        }
-
-        // const group = MENU_BUTTON(startX, yPos, itemWidth, itemHeight, item.name, formattedDate); 
-        
-        const group = hmUI.createWidget(hmUI.widget.GROUP, {
-          x: startX, y: yPos, w: itemWidth, h: itemHeight
-        });
-
-        const bgRect = group.createWidget(hmUI.widget.FILL_RECT, {
-          x: 0, y: 0, w: itemWidth, h: itemHeight,
-          color: NORMAL_COLOR, radius: px(63)
-        });
-
-        group.createWidget(hmUI.widget.TEXT, {
-          x: px(24), y: px(15), w: itemWidth - px(48), h: px(40),
-          color: 0xffffff, text_size: px(32), align_v: hmUI.align.CENTER_V,
-          text: item.name || "Unknown"
-        });
-
-        group.createWidget(hmUI.widget.TEXT, {
-          x: px(24), y: px(55), w: itemWidth - px(48), h: px(40),
-          color: 0xa0a0a0, text_size: px(24), align_v: hmUI.align.CENTER_V,
-          text: formattedDate
-        });
-
-        // Логика нажатия
-        group.addEventListener(hmUI.event.CLICK_DOWN, () => bgRect.setProperty(hmUI.prop.COLOR, PRESSED_COLOR));
-        group.addEventListener(hmUI.event.MOVE, () => bgRect.setProperty(hmUI.prop.COLOR, NORMAL_COLOR));
-        group.addEventListener(hmUI.event.CLICK_UP, () => {
-          bgRect.setProperty(hmUI.prop.COLOR, NORMAL_COLOR);
-          push({
-            url: "page/mandala_nft/index",
-            params: JSON.stringify({ id: item.id, day: item.day, name: item.name })
-          });
-        });
-        
-        this.widgets.listItems.push(group);
-      });
-    },
-
-    onDestroy() { 
-      if (this.widgets.loadingAnim) {
-        this.widgets.loadingAnim.delete();
-      }
-    }
-  })
+        onDestroy() {
+            this.keepScreenAwake(false);
+            if (this.widgets.loadingAnim) {
+                this.widgets.loadingAnim.delete();
+            }
+        },
+    })
 );

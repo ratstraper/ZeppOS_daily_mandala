@@ -31,10 +31,11 @@
         "page": {
           "pages": [
             "page/index",
-            "page/mandala/index",
-            "page/practice/index",
+            "page/collection/index",
             "page/help/index",
-            "page/help_qr/index"
+            "page/help_qr/index",
+            "page/mandala/index",
+            "page/practice/index"
           ]
         },
         "app-side": {
@@ -57,6 +58,36 @@
   "i18n": {
     "en-US": {
       "appName": "Daily Mandala"
+    },
+    "pt-BR": {
+      "appName": "Mandala Diária"
+    },
+    "vi-VN": {
+      "appName": "Mandala Hằng Ngày"
+    },
+    "id-ID": {
+      "appName": "Mandala Harian"
+    },
+    "ru-RU": {
+      "appName": "Мандала дня"
+    },
+    "tr-TR": {
+      "appName": "Günlük Mandala"
+    },
+    "es-ES": {
+      "appName": "Mandala Diaria"
+    },
+    "uk-UA": {
+      "appName": "Мандала дня"
+    },
+    "de-DE": {
+      "appName": "Tägliches Mandala"
+    },
+    "it-IT": {
+      "appName": "Mandala del Giorno"
+    },
+    "zh-CN": {
+      "appName": "每日曼荼罗"
     }
   },
   "defaultLanguage": "en-US"

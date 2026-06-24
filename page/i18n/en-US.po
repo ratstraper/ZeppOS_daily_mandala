@@ -7,25 +7,10 @@ msgstr "Today"
 msgid "open"
 msgstr "Open"
 
-msgid "how_to"
-msgstr "How to"
-
-msgid "why"
-msgstr "Why"
-
 msgid "collection"
 msgstr "Collection"
 
-msgid "go_mandala"
-msgstr "Mandala day"
-
-msgid "get_mandala"
-msgstr "Get a mandala"
-
 // practice page
-
-msgid "start"
-msgstr "Begin"
 
 msgid "start_subtitle_1"
 msgstr "with simple presence"
@@ -116,3 +101,43 @@ msgstr "See your personal mandala\nand check if your date\nis still available.\n
 
 msgid "help_practice_slide3_action"
 msgstr "Visit website →"
+
+
+msgid "month_january"
+msgstr "Jan"
+
+msgid "month_february"
+msgstr "Feb"
+
+msgid "month_march"
+msgstr "Mar"
+
+msgid "month_april"
+msgstr "Apr"
+
+msgid "month_may"
+msgstr "May"
+
+msgid "month_june"
+msgstr "Jun"
+
+msgid "month_july"
+msgstr "Jul"
+
+msgid "month_august"
+msgstr "Aug"
+
+msgid "month_september"
+msgstr "Sep"
+
+msgid "month_october"
+msgstr "Oct"
+
+msgid "month_november"
+msgstr "nov"
+
+msgid "month_december"
+msgstr "Dec"
+
+msgid "month_invalid"
+msgstr "?"

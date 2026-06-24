@@ -5,7 +5,7 @@ import {
   text_style,
   getTextLayout,
 } from "@zos/ui";
-import { getText } from "@zos/i18n";
+import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
 import { Vibrator } from "@zos/sensor";
 import { getDeviceInfo } from "@zos/device";
@@ -45,9 +45,6 @@ const UI = {
   backY: height - px(94),
 };
 
-function t(key) {
-  return getText(key);
-}
 
 function measureText(text, size, textWidth) {
   return getTextLayout(text, {
@@ -80,10 +77,10 @@ Page(
     },
 
     build() {
-      const title = t("help_qr_title");
-      const intro = t("help_qr_intro");
-      const domain = t("help_qr_domain");
-      const text = t("help_qr_text");
+      const title = i18n("help_qr_title");
+      const intro = i18n("help_qr_intro");
+      const domain = i18n("help_qr_domain");
+      const text = i18n("help_qr_text");
 
       const titleLayout = measureText(title, UI.titleSize, UI.titleW);
       const introLayout = measureText(intro, UI.introSize, UI.introW);

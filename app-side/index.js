@@ -15,7 +15,7 @@ async function fetchEmulatorData(day, info, size, res) {
         'User-Agent': `${info}`,
         'Accept': 'image/png,image/jpeg,*/*'
       }
-    });  
+    });
 
     if (!response.ok) {
       logger.log('Error downloading in Side Service:', response.status, response.statusText);
@@ -29,10 +29,10 @@ async function fetchEmulatorData(day, info, size, res) {
 
     // 3. Отправляем массив байт напрямую на часы
     // В реальной жизни FileTransfer передает файлы, а здесь мы передаем "начинку" файла
-    res(null, { 
-      result: "Ok", 
+    res(null, {
+      result: "Ok",
       isEmulatorMode: true, // Флаг, чтобы часы поняли, что пришел буфер
-      filePath: 'mandaladay.png', 
+      filePath: 'mandaladay.png',
       fileData: arrayBuffer // Сам буфер картинки
     });
 
@@ -49,15 +49,15 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
   logger.log('Starting file download...', day);
 
   const downloadTask = network.downloader.downloadFile({
-      url: `https://mandala.garageno9.site/api/watch/${day}/${size}`, 
-      timeout: 60000,
-      filePath: 'mandala.png',
-      headers: {
-        'User-Agent': `${info}`,
-        'Accept': 'image/png,image/jpeg,*/*',
-        "X-User": `${age}/${gender}/${region}/${usr}`
-      }
-    });
+    url: `https://mandala.garageno9.site/api/watch/${day}/${size}`,
+    timeout: 60000,
+    filePath: 'mandala.png',
+    headers: {
+      'User-Agent': `${info}`,
+      'Accept': 'image/png,image/jpeg,*/*',
+      "X-User": `${age}/${gender}/${region}/${usr}`
+    }
+  });
 
   downloadTask.onSuccess = (event) => {
     logger.log('The file has been successfully downloaded by the phone');
@@ -68,7 +68,7 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
     }).then((result) => {
       // Передаем файл по Bluetooth
       const outbox = transferFile.getOutbox();
-      const fileObject = outbox.enqueueFile(result.targetFilePath, { 
+      const fileObject = outbox.enqueueFile(result.targetFilePath, {
         name: 'mandaladay.png',
         type: 'image'
       });
@@ -77,15 +77,15 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
       // ВАЖНО: Слушаем статус отправки файла!
       fileObject.on('change', (transferEvent) => {
         if (transferEvent.data.readyState === 'transferred') {
-           logger.log('Success: The file is physically on the watch disk');
-           logger.log(transferEvent);
-           
-           // Возвращаем ответ в ZML ТОЛЬКО после успешной доставки файла
-           res(null, { result: "Ok", filePath: result.targetFilePath });
-           
+          logger.log('Success: The file is physically on the watch disk');
+          logger.log(transferEvent);
+
+          // Возвращаем ответ в ZML ТОЛЬКО после успешной доставки файла
+          res(null, { result: "Ok", filePath: result.targetFilePath });
+
         } else if (transferEvent.data.readyState === 'error') {
-           logger.log('Error during Bluetooth transfer');
-           res(null, { result: `Error: Bluetooth transfer failed` });
+          logger.log('Error during Bluetooth transfer');
+          res(null, { result: `Error: Bluetooth transfer failed` });
         }
       });
 
@@ -102,7 +102,7 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
 }
 
 function getCollection(info, size, usr, res) {
-  res(null, { result: "Ok", collection: [{"day":"15011939", "name":"Ivan", "id":15011939}, {"day":"11111111", "name":"Thering", "id":11111111}]});
+  res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
 }
 
 AppSideService(
@@ -110,15 +110,15 @@ AppSideService(
     onInit() {
       logger.log('Side Service successfully started!');
     },
-    onDestroy() {},
+    onDestroy() { },
     onRequest(req, res) {
       logger.log("=====> Received method:", req.method);
       if (req.method === "GET_MANDALA") {
         getMandala(req.day, req.info, req.size, req.age, req.gender, req.region, req.usr, res);
         // fetchEmulatorData(req.day, req.info, req.size, res);
-      } else if(req.method === "OPEN_MANDALA") {
+      } else if (req.method === "OPEN_MANDALA") {
         //Отправить запрос чтобы зафиксировать открытие мандалы (для аналитики)
-      } else if(req.method === "GET_COLLECTION") {
+      } else if (req.method === "GET_COLLECTION") {
         getCollection(req.info, req.size, req.usr, res)
       }
     }

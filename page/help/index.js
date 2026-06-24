@@ -22,7 +22,7 @@ const UI = {
   titleX: px(24),
   titleY: px(42),
   titleW: width - px(48),
-  titleSize: px(30),
+  titleSize: px(32),
 
   dividerW: px(60),
   dividerH: px(2),
@@ -31,7 +31,7 @@ const UI = {
   textX: px(24),
   textY: px(142),
   textW: width - px(56),
-  textSize: px(22),
+  textSize: px(24),
 
   actionX: px(28),
   actionW: width - px(56),

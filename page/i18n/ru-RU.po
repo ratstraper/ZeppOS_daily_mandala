@@ -7,23 +7,8 @@ msgstr "Практика"
 msgid "open"
 msgstr "Открыть"
 
-msgid "how_to"
-msgstr "How to"
-
-msgid "why"
-msgstr "Why"
-
 msgid "collection"
 msgstr "Коллекция"
-
-msgid "go_mandala"
-msgstr "Мандала дня"
-
-msgid "get_mandala"
-msgstr "Создать"
-
-msgid "start"
-msgstr "Начать"
 
 msgid "start_subtitle_0"
 msgstr "небольшой перезапуск"
@@ -113,3 +98,42 @@ msgstr "See your personal mandala\nand check if your date\nis still available.\n
 
 msgid "help_practice_slide3_action"
 msgstr "Visit website →"
+
+msgid "month_january"
+msgstr "Янв"
+
+msgid "month_february"
+msgstr "Фев"
+
+msgid "month_march"
+msgstr "Мар"
+
+msgid "month_april"
+msgstr "Апр"
+
+msgid "month_may"
+msgstr "Май"
+
+msgid "month_june"
+msgstr "Июн"
+
+msgid "month_july"
+msgstr "Июл"
+
+msgid "month_august"
+msgstr "Авг"
+
+msgid "month_september"
+msgstr "Сен"
+
+msgid "month_october"
+msgstr "Окт"
+
+msgid "month_november"
+msgstr "Ноя"
+
+msgid "month_december"
+msgstr "Дек"
+
+msgid "month_invalid"
+msgstr "?"

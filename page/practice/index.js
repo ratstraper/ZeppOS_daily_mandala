@@ -28,7 +28,7 @@ const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
 const SCREEN_ERROR = "SCREEN_ERROR";
 
-import { width, height, platform } from "../../utils/config/device";
+import { width, height, screenShape, platform } from "../../utils/config/device";
 const profile = getProfile() || {};
 const { age, gender, region } = profile;
 const squareSize = Math.min(width, height) * 1.0;
@@ -113,9 +113,6 @@ Page(
     },
 
     createLayout() {
-      const titleY = px(38);
-      const titleH = px(56);
-
       const heroX = px(40);
       const heroY = px(138);
       const heroW = width - px(80);
@@ -137,8 +134,6 @@ Page(
         screenShape === 1 ? (height - squareSize) / 2 : px(40);
 
       return {
-        titleY,
-        titleH,
         heroX,
         heroY,
         heroW,
@@ -170,7 +165,7 @@ Page(
       });
 
       // 1. Создаем кнопку
-// --- Настройки позиционирования нашей кнопки ---
+      // --- Настройки позиционирования нашей кнопки ---
       const btnX = px(20);
       const btnY = px(150);
       const btnWidth = width - px(40);
@@ -182,9 +177,9 @@ Page(
       // 2. Имитация обводки (подложка, которая на 8px больше самой кнопки)
       // Это работает в 100% случаев, в отличие от STROKE_RECT
       this.widgets.idleGroup.createWidget(hmUI.widget.FILL_RECT, {
-        x: btnX - px(4), 
-        y: btnY - px(4), 
-        w: btnWidth + px(8), 
+        x: btnX - px(4),
+        y: btnY - px(4),
+        w: btnWidth + px(8),
         h: btnHeight + px(8),
         color: strokeColor,
         radius: btnRadius + px(4)
@@ -203,30 +198,30 @@ Page(
       // 4. Иконка
       const iconSize = px(80);
       this.widgets.idleGroup.createWidget(hmUI.widget.IMG, {
-        x: btnX + px(40), 
+        x: btnX + px(40),
         y: btnY + (btnHeight - iconSize) / 2, // Центрируем по вертикали
-        w: iconSize, 
+        w: iconSize,
         h: iconSize,
         src: 'icons/open.png'
       });
 
       // 5. Главный текст
       this.widgets.idleGroup.createWidget(hmUI.widget.TEXT, {
-        x: btnX + px(140), 
-        y: btnY + px(30), 
-        w: btnWidth - px(160), 
+        x: btnX + px(140),
+        y: btnY + px(30),
+        w: btnWidth - px(160),
         h: px(60),
-        color: 0xffffff, 
-        text_size: px(48), 
-        align_v: hmUI.align.CENTER_V, 
+        color: 0xffffff,
+        text_size: px(48),
+        align_v: hmUI.align.CENTER_V,
         text: i18n("open")
       });
 
       // 6. Дополнительный текст
       const rnd = Math.floor(Math.random() * 4);
       let subtitle = "";
-      switch(rnd) {
-        case 0: 
+      switch (rnd) {
+        case 0:
           subtitle = i18n("start_subtitle_0");
           break;
         case 1:
@@ -240,13 +235,13 @@ Page(
           break;
       }
       this.widgets.durationText = this.widgets.idleGroup.createWidget(hmUI.widget.TEXT, {
-        x: btnX + px(140), 
-        y: btnY + px(85), 
-        w: btnWidth - px(160), 
+        x: btnX + px(140),
+        y: btnY + px(85),
+        w: btnWidth - px(160),
         h: px(40),
-        color: 0xffffff, 
-        text_size: px(30), 
-        align_v: hmUI.align.CENTER_V, 
+        color: 0xffffff,
+        text_size: px(30),
+        align_v: hmUI.align.CENTER_V,
         text: subtitle
       });
 
@@ -258,7 +253,7 @@ Page(
         y: btnY,
         w: btnWidth,
         h: btnHeight,
-        src: '' 
+        src: ''
       });
 
       // --- Сенсорная логика ---
@@ -550,8 +545,8 @@ Page(
           //   fs.writeSync({ fd, buffer: fileData });
           //   fs.closeSync({ fd });
           // } else {
-            
-            AppStorage.setMandalaData(mandalaDay, filePath);
+
+          AppStorage.setMandalaData(mandalaDay, filePath);
           // }
 
           const { streak, best, isNextDay, isSameDay } = AppStorage.getPracticeDays();
