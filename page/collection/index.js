@@ -5,9 +5,13 @@ import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
 import AppStorage from '../../utils/config/storage.js';
 import LoadingAnimationComponent from '../../utils/components/LoadingAnimationComponent.js';
-import { NORMAL_COLOR, PRESSED_COLOR } from "../../utils/config/constants.js";
+import { NORMAL_COLOR, PRESSED_COLOR, COLLECTION_SHOW, STORAGE_KEYS } from "../../utils/config/constants.js";
+// import { HardcoreResizer } from '../../utils/HardcoreResizer.js';
+// import { ImageResizer } from '../../utils/ImageResizer.js'
+// import { TgaThumbnail } from "../../utils/TgaThumbnail.js";
+// import { IndexedTgaThumbnail } from "../../utils/IndexedTgaThumbnail.js";
+import { statSync } from '@zos/fs';
 
-const logger = Logger.getLogger("mandala_day");
 
 import { width, height, screenShape, platform, getDateFormatString } from "../../utils/config/device.js";
 
@@ -19,6 +23,24 @@ import {
   MENU_BUTTON
 } from "zosLoader:./index.[pf].layout.js";
 import { TITLE } from "zosLoader:./../index.[pf].layout.js";
+
+const logger = Logger.getLogger("mandala_day");
+
+/**
+ * "Первый вход" - нет соединения с кошельком (флаг?)
+ *    Уведомление "Нет коллекции" + "вы можете..."
+ *    Settings - wallet link on site, FAQ?, 
+ * 
+ * Есть связь
+ * 1. Нет коллекции - Уведомление "Нет коллекции" и кнопка "Синхронизовать" + Settings (remote link)
+ *    Если синхронизация не приносит токены - Сообщение о том, что свою мандалу можно сминтить на сайте и линк на сайт
+ *    Если есть коллекция - сохранить локально и отобразить ее + Settings
+ * 2. Есть коллекция - отобразить + Settings (Синхронизовать, remote link)
+ * 
+ * 
+ * 
+ * На сайте по кошельку вывести список сопряженных устройств с датой последнего обращения и кнопки "разорвать связь"
+ */
 
 function measureText(text, size, textWidth) {
   return hmUI.getTextLayout(text, {
@@ -52,6 +74,9 @@ Page(
     build() {
       this.layout = this.createLayout();
       this.widgets.loadingAnim = new LoadingAnimationComponent(hmUI);
+      const arr = AppStorage.getRecord(STORAGE_KEYS.COLLECTION_JSON);
+      const linked = AppStorage.getRecord(STORAGE_KEYS.LINKED) || false;
+      console.log(`collection: ${arr}`);
 
       this.buildTitle();
       // logger.log(`Title: ${this.widgets.title.getProperty(hmUI.prop.H)}, ${this.widgets.title.getProperty(hmUI.prop.W)}`);
@@ -59,8 +84,16 @@ Page(
       this.buildLoadingGroup();
       this.buildErrorGroup();
 
-      this.setScreenState(SCREEN_LOADING);
-      this.getCollection();
+      if (arr) {
+        const collection = JSON.parse(arr);
+        logger.log(`Loading from phone:`, collection);
+        this.setScreenState(SCREEN_RESULT, { collection });
+      } else if (linked) {
+
+      } else {
+        this.setScreenState(SCREEN_LOADING);
+        this.getCollection();
+      }
     },
 
     createLayout() {
@@ -181,7 +214,12 @@ Page(
 
           if (result === "Ok") {
             logger.log(`Received collection from phone:`, collection);
+
+            AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, JSON.stringify(collection));
+
             this.setScreenState(SCREEN_RESULT, { collection });
+          } else if (result === "NO_LINK") {
+
           } else {
             logger.log("Error from phone:", result);
             this.setScreenState(SCREEN_ERROR, { message: i18n("err_connection_to_the_phone") || "Error connecting\nto the phone" });
@@ -222,7 +260,7 @@ Page(
         return;
       }
 
-      const startY = px(175); // Сместили вниз, чтобы не перекрывать заголовок px(38) + px(56) + margin
+      const startY = px(175);
       const spacing = px(25);
       const itemWidth = width - (this.layout.startX * 2);
 
@@ -241,20 +279,71 @@ Page(
 
         const titleLayout = measureText(item.name || "Unknown", px(36), itemWidth - px(104));
 
+        const originalFile = AppStorage.getMandalaPath(item.day);
+        const thumbnailFile = `${originalFile}_thumb.tga}`
+        // if () {
+        //   image = originalFile;
+        // }
+        // const file = statSync({ path: originalFile });
+        let image = originalFile ? 'icons/ic_collection.png' : 'icons/ic_not_loaded.png';
+        /*
+                try {
+                  // const thumbnailCreator = new TgaThumbnail({
+                  //   scale: 8,
+                  //   filter: "box",
+                  // });
+        
+                  const success = HardcoreResizer.createThumb(originalFile, thumbnailFile, 4);
+                  // const success = ImageResizer.createThumb(originalFile, thumbnailFile, 8);
+                  // 
+                  // {
+                  // width: 60,
+                  // height: 60,
+                  // filter: "box",
+                  // }
+                  // );
+                  // const thumbnailCreator =
+                  // new IndexedTgaThumbnail({
+                  // scale: 8,
+                  // });
+        
+                  // const success = thumbnailCreator.create(originalFile, thumbnailFile);
+                  // console.log(
+                  //   `${success.sourceWidth}x${success.sourceHeight}` +
+                  //   ` -> ` +
+                  //   `${success.targetWidth}x${success.targetHeight}`
+                  // );
+        
+                  if (success) {
+                    image = thumbnailFile;
+                    console.log(JSON.stringify(success));
+                  } else {
+                    logger.log(`Failed to create thumbnail for ${originalFile}`);
+                  }
+                } catch (err) {
+                  logger.log(`Error occurred while creating thumbnail for ${originalFile}:`, err);
+                }
+        */
+        // const stat = statSync({ path: originalFile });
+        // if (stat) {
+        // image = originalFile;
+        // }
 
         group.createWidget(hmUI.widget.IMG, {
           x: 24,
           y: (this.layout.buttonHeight - px(60)) / 2,
           w: px(60),
           h: px(60),
-          src: 'icons/circle_60.png'
+          src: image,
+          // auto_scale: true,
+          // auto_scale_obj_fit: false
         });
 
         group.createWidget(hmUI.widget.TEXT, {
           x: px(104),
           y: px(24),
           w: itemWidth - px(104),
-          h: titleLayout.height, //this.layout.buttonHeight - px(48),
+          h: titleLayout.height,
           color: 0xffffff,
           text_size: px(36),
           align_h: hmUI.align.LEFT,
@@ -299,8 +388,14 @@ Page(
             bgRect.setProperty(hmUI.prop.COLOR, NORMAL_COLOR);
 
             push({
-              url: "page/mandala/index",
-              params: JSON.stringify({ id: item.id, day: item.day, name: item.name })
+              url: "page/show/index",
+              params: JSON.stringify({
+                id: item.id,
+                day: item.day,
+                title: item.name,
+                fromLocalStorage: true,
+                type: COLLECTION_SHOW
+              }),
             });
           }
         });

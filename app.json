@@ -35,7 +35,8 @@
             "page/help/index",
             "page/help_qr/index",
             "page/mandala/index",
-            "page/practice/index"
+            "page/practice/index",
+            "page/show/index"
           ]
         },
         "app-side": {

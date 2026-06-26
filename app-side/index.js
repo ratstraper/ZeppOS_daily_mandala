@@ -51,7 +51,7 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
   const downloadTask = network.downloader.downloadFile({
     url: `https://mandala.garageno9.site/api/watch/${day}/${size}`,
     timeout: 60000,
-    filePath: 'mandala.png',
+    filePath: `${day}.png`,
     headers: {
       'User-Agent': `${info}`,
       'Accept': 'image/png,image/jpeg,*/*',
