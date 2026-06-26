@@ -279,7 +279,7 @@ Page(
 
         const titleLayout = measureText(item.name || "Unknown", px(36), itemWidth - px(104));
 
-        const originalFile = AppStorage.getMandalaPath(item.day);
+        const originalFile = AppStorage.getRecord(item.day);
         const thumbnailFile = `${originalFile}_thumb.tga}`
         // if () {
         //   image = originalFile;

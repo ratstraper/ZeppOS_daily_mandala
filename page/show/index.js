@@ -76,7 +76,7 @@ Page(
       if (this.state.type === PRACTICE_SHOW) {
         this.fetchData();
       } else if (this.state.type === COLLECTION_SHOW) {
-        const localPath = AppStorage.getMandalaPath(this.state.day);
+        const localPath = AppStorage.getRecord(this.state.day);
         if (localPath) {
           this.setScreenState(SCREEN_RESULT, { filePath: localPath });
         } else {
@@ -86,7 +86,7 @@ Page(
       }
       // } else {
       // Future logic to load from storage
-      // const localPath = AppStorage.getMandalaPath();
+      // const localPath = AppStorage.getRecord(STORAGE_KEYS.MANDALA_PATH);
       // if (localPath) {
       // this.setScreenState(SCREEN_RESULT, { filePath: localPath });
       // } else {
@@ -201,7 +201,7 @@ Page(
               AppStorage.setMandalaData(mandalaDay, filePath);
               this.setScreenState(SCREEN_RESULT, { filePath });
             } else if (this.state.type === COLLECTION_SHOW) {
-              AppStorage.saveCollectionItem(mandalaDay, filePath);
+              AppStorage.setRecord(mandalaDay, filePath);
               this.setScreenState(SCREEN_RESULT, { filePath });
             }
           } else {

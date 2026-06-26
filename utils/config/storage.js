@@ -1,9 +1,7 @@
 import { LocalStorage } from '@zos/storage';
-import { log as Logger } from "@zos/utils";
 import { Time } from "@zos/sensor";
 import { STORAGE_KEYS } from './constants';
 
-const logger = Logger.getLogger("storage");
 const storage = new LocalStorage();
 
 export default class AppStorage {
@@ -17,6 +15,9 @@ export default class AppStorage {
     }
     return installId;
   }
+
+  static getRecord(key) { return storage.getItem(key); }
+  static setRecord(key, value) { storage.setItem(key, value); }
 
   static getMandalaDayString() {
     const time = new Time();
@@ -76,26 +77,10 @@ export default class AppStorage {
     };
   }
 
-  static getMandalaDay() {
-    return storage.getItem(STORAGE_KEYS.MANDALA_DAY);
-  }
-
-  static getMandalaPath(day = STORAGE_KEYS.MANDALA_PATH) {
-    return storage.getItem(day);
-  }
-
   static setMandalaData(day, path) {
     this.addPracticeDays();
     storage.setItem(STORAGE_KEYS.MANDALA_DAY, day);
     storage.setItem(STORAGE_KEYS.MANDALA_PATH, path);
-  }
-
-  static getRecord(key) { return storage.getItem(key); }
-
-  static setRecord(key, value) { storage.setItem(key, value); }
-
-  static saveCollectionItem(day, path) {
-    storage.setItem(day, path);
   }
 
   static setStreakData(streak, best) {

@@ -1,7 +1,7 @@
 import { BaseSideService } from "@zeppos/zml/base-side";
 
 const logger = Logger.getLogger('test-image-convert')
-
+const WEBSITE_URL = "https://mandala.garageno9.site"
 
 /**
  * for emulator testing, you can use a direct URL to an image, for example:
@@ -49,7 +49,7 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
   logger.log('Starting file download...', day);
 
   const downloadTask = network.downloader.downloadFile({
-    url: `https://mandala.garageno9.site/api/watch/${day}/${size}`,
+    url: `${WEBSITE_URL}/api/watch/${day}/${size}`,
     timeout: 60000,
     filePath: `${day}.png`,
     headers: {
@@ -105,6 +105,24 @@ function getCollection(info, size, usr, res) {
   res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
 }
 
+async function getNews(request, res) {
+  logger.log('getNews:', request);
+
+
+  const response = await fetch({
+    url: `${WEBSITE_URL}/api/watch/zepp/news/${request.time}/${request.region}/${request.version}`,
+    method: 'GET',
+    headers: {
+      'User-Agent': `${request.info}`,
+      "X-User": `${request.age}/${request.gender}/${request.region}/${request.usr}`,
+    }
+  });
+  const data = typeof response.body === 'string' ? JSON.parse(response.body) : response.body
+  res(null, data);
+}
+
+
+
 AppSideService(
   BaseSideService({
     onInit() {
@@ -119,7 +137,9 @@ AppSideService(
       } else if (req.method === "OPEN_MANDALA") {
         //Отправить запрос чтобы зафиксировать открытие мандалы (для аналитики)
       } else if (req.method === "GET_COLLECTION") {
-        getCollection(req.info, req.size, req.usr, res)
+        getCollection(req.info, req.size, req.usr, res);
+      } else if (req.method === "GET_NEWS") {
+        getNews(req.request, res);
       }
     }
   })

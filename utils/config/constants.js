@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   BEST_STREAK: 'bestStreak',
   COLLECTION_JSON: 'collectionJson',
   LINKED: 'linked',
+  LAST_NEWS: 'lastNews',
 };
 
 export const PRACTICE_SHOW = 1;
