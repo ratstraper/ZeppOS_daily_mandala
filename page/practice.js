@@ -5,10 +5,9 @@ import { BasePage } from "@zeppos/zml/base-page";
 import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@zos/interaction';
 import { getDeviceInfo } from "@zos/device";
 import { push } from '@zos/router';
-import AppStorage from "../../utils/config/storage.js";
-import { NORMAL_COLOR, PRESSED_COLOR, SELECTED_COLOR } from "zosLoader:./index.[pf].layout.js";
-import { TITLE } from "zosLoader:./../index.[pf].layout.js";
-import { WEBSITE_URL, PRACTICE_SHOW } from "../../utils/config/constants.js";
+import AppStorage from "../utils/config/storage.js";
+import { NORMAL_COLOR, PRESSED_COLOR, SELECTED_COLOR, TITLE } from "zosLoader:./index.[pf].layout.js";
+import { WEBSITE_URL, PRACTICE_SHOW, STORAGE_KEYS } from "../utils/config/constants.js";
 
 const logger = Logger.getLogger("practice_screen");
 const { width, height } = getDeviceInfo();
@@ -187,12 +186,13 @@ Page(
     handleOpenClick() {
       logger.log("Open clicked, navigating to show screen");
       const mandalaDay = AppStorage.getMandalaDayString();
+      const local = AppStorage.getRecord(STORAGE_KEYS.MANDALA_DAY) == mandalaDay;
       push({
-        url: "page/show/index",
+        url: "page/show",
         params: JSON.stringify({
           day: mandalaDay,
           title: i18n("practice"),
-          fromLocalStorage: false,
+          fromLocalStorage: local,
           type: PRACTICE_SHOW,
         }),
       });
@@ -201,7 +201,7 @@ Page(
     openHelp() {
       logger.log("Open practice help");
       push({
-        url: "page/help/index",
+        url: "page/help",
         params: JSON.stringify({ slides: SLIDES_PRACTICE }),
       });
     },

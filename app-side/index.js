@@ -2,6 +2,7 @@ import { BaseSideService } from "@zeppos/zml/base-side";
 
 const logger = Logger.getLogger('test-image-convert')
 const WEBSITE_URL = "https://mandala.garageno9.site"
+const PRACTICE_SHOW = 1;
 
 /**
  * for emulator testing, you can use a direct URL to an image, for example:
@@ -45,17 +46,33 @@ async function fetchEmulatorData(day, info, size, res) {
 /**
  * For smartphone
  */
-function getMandala(day, info, size, age, gender, region, usr, res) {
-  logger.log('Starting file download...', day);
-
-  const downloadTask = network.downloader.downloadFile({
-    url: `${WEBSITE_URL}/api/watch/${day}/${size}`,
-    timeout: 60000,
-    filePath: `${day}.png`,
+async function openMandala(request, res) {
+  logger.log('openMandala:', request);
+  const response = await fetch({
+    url: `${WEBSITE_URL}/api/watch/repeat/${request.day}/${request.size}`,
+    method: 'GET',
     headers: {
-      'User-Agent': `${info}`,
+      'User-Agent': `${request.info}`,
+      'X-App-Version': `${request.version}`,
+      "X-User": `${request.age}/${request.gender}/${request.region}/${request.usr}`,
+    }
+  });
+  res(null, response.body);
+}
+
+function getMandala(request, res) {
+
+  const filename = request.type === PRACTICE_SHOW ? 'mandaladay.png' : `${request.day}.png`;
+  logger.log('Starting file download...', filename);
+  const downloadTask = network.downloader.downloadFile({
+    url: `${WEBSITE_URL}/api/watch/${request.day}/${request.size}`,
+    timeout: 60000,
+    filePath: filename,
+    headers: {
+      'User-Agent': `${request.info}`,
       'Accept': 'image/png,image/jpeg,*/*',
-      "X-User": `${age}/${gender}/${region}/${usr}`
+      'X-App-Version': `${request.version}`,
+      "X-User": `${request.age}/${request.gender}/${request.region}/${request.usr}`
     }
   });
 
@@ -64,7 +81,9 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
 
     image.convert({
       filePath: event.filePath,
-      // targetFilePath: 'logo_watch.png'
+      //сделать для практики файл с одним и тем же именем, чтобы не забить память прошлыми днями,
+      //для коллекции оставить как есть - имя файла - день/id_token
+      // targetFilePath: 'mandala.png'
     }).then((result) => {
       // Передаем файл по Bluetooth
       const outbox = transferFile.getOutbox();
@@ -101,7 +120,7 @@ function getMandala(day, info, size, age, gender, region, usr, res) {
   };
 }
 
-function getCollection(info, size, usr, res) {
+function getCollection(request, res) {
   res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
 }
 
@@ -110,11 +129,13 @@ async function getNews(request, res) {
 
 
   const response = await fetch({
-    url: `${WEBSITE_URL}/api/watch/zepp/news/${request.time}/${request.region}/${request.version}`,
+    url: `${WEBSITE_URL}/api/watch/zepp/news/${request.time}/${request.region}`,
     method: 'GET',
     headers: {
       'User-Agent': `${request.info}`,
+      'X-App-Version': `${request.version}`,
       "X-User": `${request.age}/${request.gender}/${request.region}/${request.usr}`,
+
     }
   });
   const data = typeof response.body === 'string' ? JSON.parse(response.body) : response.body
@@ -132,12 +153,13 @@ AppSideService(
     onRequest(req, res) {
       logger.log("=====> Received method:", req.method);
       if (req.method === "GET_MANDALA") {
-        getMandala(req.day, req.info, req.size, req.age, req.gender, req.region, req.usr, res);
+        getMandala(req.request, res);
         // fetchEmulatorData(req.day, req.info, req.size, res);
       } else if (req.method === "OPEN_MANDALA") {
+        openMandala(req.request, res)
         //Отправить запрос чтобы зафиксировать открытие мандалы (для аналитики)
       } else if (req.method === "GET_COLLECTION") {
-        getCollection(req.info, req.size, req.usr, res);
+        getCollection(req.request, res);
       } else if (req.method === "GET_NEWS") {
         getNews(req.request, res);
       }

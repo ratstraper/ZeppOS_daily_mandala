@@ -5,28 +5,27 @@ import { BasePage } from "@zeppos/zml/base-page";
 import { onKey, offKey } from '@zos/interaction';
 import { getDeviceInfo } from "@zos/device";
 import { getProfile, GENDER_MALE, GENDER_FEMALE } from "@zos/user";
-import AppStorage from "../../utils/config/storage.js";
-import LoadingAnimationComponent from "../../utils/components/LoadingAnimationComponent.js";
+import AppStorage from "../utils/config/storage.js";
+import Profile from "../utils/config/profile.js";
+import LoadingAnimationComponent from "../utils/components/LoadingAnimationComponent.js";
 import {
   setPageBrightTime,
   resetPageBrightTime,
   pauseDropWristScreenOff,
   resetDropWristScreenOff,
 } from "@zos/display";
-import { TITLE } from "zosLoader:./../index.[pf].layout.js";
+import { TITLE } from "zosLoader:./index.[pf].layout.js";
 import {
   PRACTICE_SHOW,
   COLLECTION_SHOW,
-} from "../../utils/config/constants";
+  STORAGE_KEYS
+} from "../utils/config/constants.js";
 const logger = Logger.getLogger("show_mandala_screen");
 
 const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
 const SCREEN_ERROR = "SCREEN_ERROR";
-
-const { width, height, screenShape, platform } = getDeviceInfo();
-const profile = getProfile() || {};
-const { age, gender, region } = profile;
+const { width, height, screenShape } = getDeviceInfo();
 const squareSize = Math.min(width, height) * 1.0;
 
 Page(
@@ -73,27 +72,25 @@ Page(
 
       this.setScreenState(SCREEN_LOADING);
 
+      //openMandala
       if (this.state.type === PRACTICE_SHOW) {
-        this.fetchData();
+        const mandalaDay = AppStorage.getMandalaDayString();
+        const local = AppStorage.getRecord(STORAGE_KEYS.MANDALA_DAY) == mandalaDay;
+        if (local) {
+          this.openMandala(this.state.type);
+          this.setScreenState(SCREEN_RESULT, { filePath: AppStorage.getRecord(STORAGE_KEYS.MANDALA_PATH) });
+        } else {
+          this.downloadMandala(this.state.type);
+        }
       } else if (this.state.type === COLLECTION_SHOW) {
         const localPath = AppStorage.getRecord(this.state.day);
         if (localPath) {
+          this.openMandala(this.state.type);
           this.setScreenState(SCREEN_RESULT, { filePath: localPath });
         } else {
-          logger.log("No local file found for day:", this.state.day);
-          this.fetchData();
+          this.downloadMandala(this.state.type);
         }
       }
-      // } else {
-      // Future logic to load from storage
-      // const localPath = AppStorage.getRecord(STORAGE_KEYS.MANDALA_PATH);
-      // if (localPath) {
-      // this.setScreenState(SCREEN_RESULT, { filePath: localPath });
-      // } else {
-      // this.fetchData();
-      // this.setScreenState(SCREEN_ERROR, { message: "Error: No local file found." });
-      // }
-      // }
 
       this.initKeyNavigation();
     },
@@ -175,32 +172,52 @@ Page(
       }
     },
 
-    fetchData() {
+    openMandala(type) {
+      const mandalaDay = this.state.day;
+      if (!mandalaDay) {
+        this.setScreenState(SCREEN_ERROR, { message: "Error: No day provided." });
+        return;
+      }
+      const request = Profile.createRequestData();
+      request.day = mandalaDay;
+      request.type = type;
+
+      this.request({
+        method: "OPEN_MANDALA",
+        request
+      })
+        .then((data) => {
+          logger.log(data);
+        })
+        .catch((err) => {
+          logger.log("Network/BLE error:", err);
+        });
+    },
+
+    downloadMandala(type) {
       const mandalaDay = this.state.day;
       if (!mandalaDay) {
         this.setScreenState(SCREEN_ERROR, { message: "Error: No day provided." });
         return;
       }
 
-      const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
+      const request = Profile.createRequestData();
+      request.day = mandalaDay;
+      request.type = type;
 
       this.request({
         method: "GET_MANDALA",
-        day: mandalaDay,
-        info: platform,
-        size: squareSize,
-        age,
-        gender: gender === GENDER_MALE ? "M" : gender === GENDER_FEMALE ? "F" : "U",
-        region,
-        usr: userId,
+        request
       })
         .then((data) => {
           const { result, filePath } = data;
           if (result === "Ok") {
             if (this.state.type === PRACTICE_SHOW) {
+              console.log(`PRACTICE_SHOW.filePath: ${filePath}`)
               AppStorage.setMandalaData(mandalaDay, filePath);
               this.setScreenState(SCREEN_RESULT, { filePath });
             } else if (this.state.type === COLLECTION_SHOW) {
+              console.log(`COLLECTION_SHOW.filePath: ${filePath}`)
               AppStorage.setRecord(mandalaDay, filePath);
               this.setScreenState(SCREEN_RESULT, { filePath });
             }

@@ -14,6 +14,7 @@
   },
   "permissions": [
     "data:os.device.info",
+    "device:os.alarm",
     "device:os.local_storage",
     "device:os.network",
     "device:os.notification",
@@ -32,16 +33,20 @@
         "page": {
           "pages": [
             "page/index",
-            "page/collection/index",
-            "page/help/index",
-            "page/help_qr/index",
-            "page/mandala/index",
-            "page/practice/index",
-            "page/show/index"
+            "page/collection",
+            "page/help",
+            "page/qr",
+            "page/practice",
+            "page/show"
           ]
         },
         "app-side": {
           "path": "app-side/index"
+        },
+        "app-service": {
+          "services": [
+            "app-service/delayedNewsService"
+          ]
         }
       },
       "platforms": [

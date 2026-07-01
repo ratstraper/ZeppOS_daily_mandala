@@ -183,7 +183,7 @@ Page(
             hapticStrong();
             logger.log("open QR page", slide.action.url);
             push({
-              url: "page/help_qr/index",
+              url: "page/qr",
               params: JSON.stringify({
                 url: slide.action.url,
               }),

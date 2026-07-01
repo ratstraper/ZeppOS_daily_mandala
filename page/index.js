@@ -1,20 +1,18 @@
 import * as hmUI from "@zos/ui";
-import { getPackageInfo } from '@zos/app';
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
 import { BasePage } from "@zeppos/zml/base-page";
-import * as notificationMgr from '@zos/notification';
-import { getDeviceInfo } from "@zos/device";
-import { getProfile, GENDER_MALE, GENDER_FEMALE } from "@zos/user";
+import { scheduleNotification } from "../utils/ScheduleNotification";
 import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@zos/interaction';
 import { scrollTo } from '@zos/page';
 import { push } from '@zos/router';
 import { DEVICE_WIDTH, DEVICE_HEIGHT } from '../utils/config/device'
 import { WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR, STORAGE_KEYS } from '../utils/config/constants';
-
-import { FETCH_RESULT_TEXT } from "zosLoader:./index.[pf].layout.js";
-import { TITLE } from "zosLoader:./index.[pf].layout.js";
+import Profile from "../utils/config/profile.js";
 import AppStorage from "../utils/config/storage";
+
+import { FETCH_RESULT_TEXT, TITLE } from "zosLoader:./index.[pf].layout.js";
+
 
 const logger = Logger.getLogger("mandala_day");
 
@@ -57,8 +55,8 @@ Page(
       this.buildTitle();
 
       this.state.menuItems = [
-        { id: 'practice/index', title: i18n("practice"), icon: 'icons/ic_daily.png' },
-        { id: 'collection/index', title: i18n("collection"), icon: 'icons/ic_collection.png' },
+        { id: 'practice', title: i18n("practice"), icon: 'icons/ic_daily.png' },
+        { id: 'collection', title: i18n("collection"), icon: 'icons/ic_collection.png' },
       ];
 
       const questionIndex = this.state.menuItems.length;
@@ -175,9 +173,8 @@ Page(
         if (this.state.selectedIndex === questionIndex) {
           this.state.selectedIndex = -1;
           updateSelection();
-          // Передаем фейковый объект item для выполнения действия "Помощь"
           this.executeAction({
-            id: 'help/index',
+            id: 'help',
             title: 'Справка/Помощь',
             params: JSON.stringify({ slides: SLIDES_MAIN })
           });
@@ -284,55 +281,55 @@ Page(
       console.log(`loadNews lastNews: ${lastNews}, nowTime: ${nowTime}`);
 
       if (lastNews + 10 * 24 * 60 * 60 < nowTime) {
-        const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
-        const { width, height, screenShape, platform } = getDeviceInfo();
-        const profile = getProfile() || {};
-        const { age, gender, region } = profile;
-        const appInfo = getPackageInfo();
-        // const squareSize = Math.min(width, height);
+        const request = Profile.createRequestData();
+        request.time = lastNews;
 
         this.request({
           method: "GET_NEWS",
-          request: {
-            time: lastNews,
-            info: platform,
-            // size: squareSize,
-            age,
-            gender: gender === GENDER_MALE ? "M" : gender === GENDER_FEMALE ? "F" : "U",
-            region,
-            version: appInfo.versionCode,
-            usr: userId
-          }
+          request
         })
           .then((data) => {
             const { result = {}, news = [] } = data;
-            if (result === "Ok") {
-              const item = news[0];
-              // news.forEach(item => {
-              logger.log(`News: ${item.date}, ${item.title}, ${item.body}`);
-              const safeTitle = item.title ? String(item.title) : "Новое событие";
-              const safeContent = "Тестовый текст"; // Оставляем жесткую строку для теста
-              //Сделать страницу Последнее уведомление на которую будет переход с уведомления.
-              //На странице показать тот же текст?
-              const notifyId = notificationMgr.notify({
-                title: item.title,
-                content: item.body,
-                vibrate: 1,
-                actions: [
-                  {
-                    text: "Открыть",
-                    file: "page/index",
-                  },
-                ],
+            if (result === "Ok" && news.length > 0) {
+              let content = ""
+              news.forEach(item => {
+                content += item.body + '\n\n';
               });
+              const item = news[0];
+              logger.log(`News: ${item.date}, ${item.title}, ${content}`);
 
-              if (notifyId > 0) {
-                logger.log(`Уведомление успешно отправлено! ID: ${notifyId}`);
-              } else {
-                logger.log("Ошибка: системе не удалось отправить уведомление.");
-              }
-              // });
-
+              const alarmId =
+                scheduleNotification({
+                  title: item.title,
+                  content: content,
+                });
+              console.log(`Notification scheduled, alarmId=${alarmId}`);
+              /*
+                            const safeTitle = item.title ? String(item.title) : "Новое событие";
+                            const safeContent = "Тестовый текст"; // Оставляем жесткую строку для теста
+                            //Сделать страницу Последнее уведомление на которую будет переход с уведомления.
+                            //На странице показать тот же текст?
+                            //лучше через alarm вывести уведомление на следующие сутки примерно в это же время, если не позднее, или до 9pm
+              
+                            const notifyId = notificationMgr.notify({
+                              title: item.title,
+                              content: item.body,
+                              vibrate: 1,
+                              actions: [
+                                {
+                                  text: "Открыть",
+                                  file: "page/index",
+                                },
+                              ],
+                            });
+              
+                            if (notifyId > 0) {
+                              logger.log(`Уведомление успешно отправлено! ID: ${notifyId}`);
+                            } else {
+                              logger.log("Ошибка: системе не удалось отправить уведомление.");
+                            }
+                            // });
+              */
               // AppStorage.setRecord(STORAGE_KEYS.LAST_NEWS, nowTime);
             } else {
               logger.log("Phone returned error:", data);
@@ -341,10 +338,7 @@ Page(
           .catch((err) => {
             logger.log("Network/BLE error:", err);
           });
-      } else {
-
       }
-      //  /api/watch/zepp/news/:time/:locale
     },
 
     onDestroy() {

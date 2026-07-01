@@ -23,11 +23,10 @@ The application follows a standard ZeppOS architecture, consisting of a device-s
 The application's UI is divided into several pages (screens), as defined in `app.json`. These define the primary features and user flows.
 
 - **`page/index`**: The main entry screen of the application, likely serving as a home screen or menu.
-- **`page/mandala/index`**: The core screen for displaying the daily mandala.
-- **`page/practice/index`**: A screen for the "practice" feature, which likely involves interacting with the mandala and may track user statistics like practice streaks.
-- **`page/collection/index`**: A screen to view a user's personal collection of mandalas, likely tied to the NFT minting feature.
-- **`page/help/index`**: An information screen explaining the app's features.
-- **`page/help_qr/index`**: A screen displaying a QR code that links to the Soul Mandala website.
+- **`page/practice`**: A screen for the "practice" feature, which likely involves interacting with the mandala and may track user statistics like practice streaks.
+- **`page/collection`**: A screen to view a user's personal collection of mandalas, likely tied to the NFT minting feature.
+- **`page/help`**: An information screen explaining the app's features.
+- **`page/qr`**: A screen displaying a QR code that links to the Soul Mandala website.
 
 ---
 
@@ -95,14 +94,14 @@ The `page/` directory contains the logic for each screen of the application.
 ### 6.1. Main Menu (`page/index.js`)
 - **Role**: This is the central navigation hub of the application.
 - **UI**: It builds a vertical, scrollable menu with three main interactive elements:
-    1.  A button to navigate to the **Practice** screen (`page/practice/index`).
-    2.  A button to navigate to the **Collection** screen (`page/collection/index`).
-    3.  A help icon to navigate to the **Help** screen (`page/help/index`), passing a specific set of help slides as a parameter.
+    1.  A button to navigate to the **Practice** screen (`page/practice`).
+    2.  A button to navigate to the **Collection** screen (`page/collection`).
+    3.  A help icon to navigate to the **Help** screen (`page/help`), passing a specific set of help slides as a parameter.
 - **Interaction**:
     - The page is fully navigable using both touch input and the physical up/down/select buttons.
     - A visual "selected" state is applied to the focused menu item.
 
-### 6.2. Practice Screen (`page/practice/index.js`)
+### 6.2. Practice Screen (`page/practice.js`)
 - **Role**: This is the core functional screen for the daily practice feature.
 - **State Machine**: The screen operates as a state machine, managing the UI based on the current state:
     - `SCREEN_IDLE`: The initial state. It displays the main "Open" button, along with the user's current and best practice streaks (e.g., "Streak 5 · Best 10") and a status ("Done today" or "Not yet today"). This data is loaded from `AppStorage` when the page initializes.

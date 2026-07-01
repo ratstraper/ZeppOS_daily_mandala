@@ -3,9 +3,10 @@ import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
 import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
-import AppStorage from '../../utils/config/storage.js';
-import LoadingAnimationComponent from '../../utils/components/LoadingAnimationComponent.js';
-import { NORMAL_COLOR, PRESSED_COLOR, COLLECTION_SHOW, STORAGE_KEYS } from "../../utils/config/constants.js";
+import AppStorage from '../utils/config/storage.js';
+import Profile from "../utils/config/profile.js";
+import LoadingAnimationComponent from '../utils/components/LoadingAnimationComponent.js';
+import { NORMAL_COLOR, PRESSED_COLOR, COLLECTION_SHOW, STORAGE_KEYS } from "../utils/config/constants.js";
 // import { HardcoreResizer } from '../../utils/HardcoreResizer.js';
 // import { ImageResizer } from '../../utils/ImageResizer.js'
 // import { TgaThumbnail } from "../../utils/TgaThumbnail.js";
@@ -13,16 +14,13 @@ import { NORMAL_COLOR, PRESSED_COLOR, COLLECTION_SHOW, STORAGE_KEYS } from "../.
 import { statSync } from '@zos/fs';
 
 
-import { width, height, screenShape, platform, getDateFormatString } from "../../utils/config/device.js";
+import { width, height, screenShape, getDateFormatString } from "../utils/config/device.js";
 
 const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
 const SCREEN_ERROR = "SCREEN_ERROR";
 
-import {
-  MENU_BUTTON
-} from "zosLoader:./index.[pf].layout.js";
-import { TITLE } from "zosLoader:./../index.[pf].layout.js";
+import { MENU_BUTTON, TITLE } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
 
@@ -202,15 +200,14 @@ Page(
     getCollection() {
       logger.log('Sending GET_COLLECTION request to the phone...');
 
-      const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
+      const request = Profile.createRequestData();
 
       this.request({
         method: "GET_COLLECTION",
-        info: platform,
-        usr: userId
+        request
       })
         .then((data) => {
-          const { result = {}, collection = [] } = data; //{ result: "Ok", collection: [{"day":"15011939", "name":"Ivan", "id":15011939}, {"day":"11111111", "name":"Thering", "id":11111111}]}
+          const { result = {}, collection = [] } = data;
 
           if (result === "Ok") {
             logger.log(`Received collection from phone:`, collection);
@@ -388,7 +385,7 @@ Page(
             bgRect.setProperty(hmUI.prop.COLOR, NORMAL_COLOR);
 
             push({
-              url: "page/show/index",
+              url: "page/show",
               params: JSON.stringify({
                 id: item.id,
                 day: item.day,
