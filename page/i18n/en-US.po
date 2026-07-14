@@ -36,6 +36,9 @@ msgstr "Not yet today"
 msgid  "err_connection_to_the_phone"
 msgstr "Error connecting\nto the phone"
 
+msgid "err_internet_connection"
+msgstr "Сеть недоступна.\nПроверьте подключение\nтелефона к интернету\nи повторите."
+
 msgid "streak"
 msgstr "Streak"
 
@@ -141,3 +144,6 @@ msgstr "Dec"
 
 msgid "month_invalid"
 msgstr "?"
+
+msgid "settings"
+msgstr "Settings"

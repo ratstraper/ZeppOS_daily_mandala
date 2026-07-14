@@ -6,7 +6,7 @@
     "appType": "app",
     "version": {
       "code": 1,
-      "name": "1.0.1"
+      "name": "1.0.0"
     },
     "icon": "icon.png",
     "vender": "zepp",
@@ -37,7 +37,8 @@
             "page/help",
             "page/qr",
             "page/practice",
-            "page/show"
+            "page/show",
+            "page/settings"
           ]
         },
         "app-side": {
