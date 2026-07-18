@@ -120,16 +120,6 @@ function getMandala(request, res) {
   };
 }
 
-async function getCollection(request, res) {
-  // res(null, {result: "NO_LINK"});
-  // res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
-  try { 
-    logger.log('getCollection:', request,);
-    res(null, await linkApi('/api/watch/collection', request, {})); 
-  }
-  catch (err) { logger.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
-}
-
 async function getNews(request, res) {
   logger.log('getNews:', request);
 
@@ -163,6 +153,16 @@ async function linkApi(path, request, extraBody) {
     body: JSON.stringify({ deviceId: request.usr, ...extraBody })
   });
   return typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
+}
+
+async function getCollection(request, res) {
+  // res(null, {result: "NO_LINK"});
+  // res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
+  try { 
+    logger.log('getCollection:', request,);
+    res(null, await linkApi('/api/watch/collection', request, {})); 
+  }
+  catch (err) { logger.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
 async function linkStart(request, res) {

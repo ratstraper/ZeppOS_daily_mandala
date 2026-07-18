@@ -358,13 +358,13 @@ Page(
         request,
       })
         .then((data) => {
-          const { result = "", collection = [] } = data;
+          const { status = "", collection = [] } = data;
 
-          if (result === "Ok") {
+          if (status === "OK") {
             logger.log('Received collection from phone, items:', collection.length);
             AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, JSON.stringify(collection));
             this.setScreenState(SCREEN_RESULT, { collection });
-          } else if (result === "NO_LINK") {
+          } else if (status === "NO_LINK") {
             // Кошелёк не привязан: показываем пустой экран с подсказкой,
             // настройки при этом остаются доступны (helpImg рисуется всегда)
             logger.log('Wallet is not linked');
