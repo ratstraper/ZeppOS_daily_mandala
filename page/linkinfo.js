@@ -125,7 +125,7 @@ Page(
           hapticStrong();
           const url = AppStorage.getLinkUrl();
           logger.log("open link QR from help:", url);
-          replace({
+          push({
             url: "page/link",
             params: JSON.stringify({ url }),
           });

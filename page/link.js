@@ -125,9 +125,21 @@ Page(BasePage({
       x: 0, y: Math.floor(H * 0.05), w: W, h: 40,
       text: 'Scan to link', color: 0xffffff, text_size: 28, align_h: align.CENTER_H
     })
+      const qrPad = px(10)
+      const bgX = Math.floor((W - size) / 2);
+      const bgY = Math.floor(H * 0.17);
+
     this.add(widget.QRCODE, {
       content: url,
-      x: Math.floor((W - size) / 2), y: Math.floor(H * 0.17), w: size, h: size
+      x: bgX + qrPad, 
+      y: bgY + qrPad, 
+      w: size - qrPad * 2, 
+      h: size - qrPad * 2,
+      bg_x: bgX,
+      bg_y: bgY,
+      bg_w: size,
+      bg_h: size,
+      bg_radius: px(14),
     })
     this.add(widget.TEXT, {
       x: 0, y: Math.floor(H * 0.78), w: W, h: 60,
