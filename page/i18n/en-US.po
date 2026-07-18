@@ -28,7 +28,7 @@ msgid "loading_mandala"
 msgstr "Determining the day's energy"
 
 msgid "done_today"
-msgstr "Done today
+msgstr "Done today"
 
 msgid "not_yet_today"
 msgstr "Not yet today"
@@ -147,3 +147,29 @@ msgstr "?"
 
 msgid "settings"
 msgstr "Settings"
+
+// nolink screen
+msgid "no_link_title"
+msgstr "No Link"
+
+msgid "no_link_details"
+msgstr "Details"
+
+msgid "no_link_link"
+msgstr "Link"
+
+msgid "no_link_help_title"
+msgstr "Mandala on Your Wrist"
+
+msgid "no_link_help_text"
+msgstr "If you own one or more NFTs from the Soul Mandala collection, you can link them to your watch. They will then be available on your wrist at any time.\n\nFollow the link to the website, confirm ownership of the wallet holding the NFTs from the collection, and your mandalas will appear on your watch in the Collection section."
+
+msgid "no_link_help_action"
+msgstr "Details on website"
+
+// collection page
+msgid "loading"
+msgstr "Loading..."
+
+msgid "empty_collection"
+msgstr "Collection is empty"

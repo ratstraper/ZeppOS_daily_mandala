@@ -19,13 +19,14 @@ Page(
       questionImg: null
     },
     build() {
+        logger.log(`SETTINGS.JS`);
         this.layout = this.createLayout();
 
         this.buildTitle();
     },
     createLayout() {
       const startX = px(40);            // Центрирование (40 пикселей от каждого края)      
-      const startY = px(175);           // Отступ сверху (под заголовком)
+      const startY = px(130);           // Отступ сверху (под заголовком)
       const buttonHeight = px(126);     // Высота одной плашки
       const spacing = px(25);           // Расстояние между плашками
       const buttonWidth = width - (2 * startX); // Ширина плашки (экран минус отступы по бокам)

@@ -1,6 +1,6 @@
 import { BaseSideService } from "@zeppos/zml/base-side";
 
-const logger = Logger.getLogger('test-image-convert')
+const logger = Logger.getLogger('mandala-day')
 const WEBSITE_URL = "https://mandala.garageno9.site"
 const PRACTICE_SHOW = 1;
 
@@ -120,13 +120,18 @@ function getMandala(request, res) {
   };
 }
 
-function getCollection(request, res) {
-  res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
+async function getCollection(request, res) {
+  // res(null, {result: "NO_LINK"});
+  // res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
+  try { 
+    logger.log('getCollection:', request,);
+    res(null, await linkApi('/api/watch/collection', request, {})); 
+  }
+  catch (err) { logger.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
 async function getNews(request, res) {
   logger.log('getNews:', request);
-
 
   const response = await fetch({
     url: `${WEBSITE_URL}/api/watch/zepp/news/${request.time}/${request.region}`,
@@ -135,13 +140,60 @@ async function getNews(request, res) {
       'User-Agent': `${request.info}`,
       'X-App-Version': `${request.version}`,
       "X-User": `${request.age}/${request.gender}/${request.region}/${request.usr}`,
-
     }
   });
   const data = typeof response.body === 'string' ? JSON.parse(response.body) : response.body
   res(null, data);
 }
 
+// ── Привязка часов к кошельку ─────────────────────────────────────
+async function linkApi(path, request, extraBody) {
+  logger.log('linkApi:', path, request, extraBody);
+
+  const response = await fetch({
+    url: `${WEBSITE_URL}${path}`,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': `${request.info}`,
+      'X-App-Version': `${request.version}`,
+      'X-User': `${request.age}/${request.gender}/${request.region}/${request.usr}`
+    },
+    // deviceId = usr: только в теле POST, в URL — никогда
+    body: JSON.stringify({ deviceId: request.usr, ...extraBody })
+  });
+  return typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
+}
+
+async function linkStart(request, res) {
+  try {
+    const data = await linkApi('/device/link-start', request, {});
+    if (data && data.token) data.qr = `${WEBSITE_URL}/link/add/${data.token}`;
+    res(null, data);
+  } catch (err) {
+    logger.log('linkStart error:', err);
+    res(null, { status: 'ERROR', error: 'network' });
+  }
+}
+
+async function linkStatus(request, res) {
+  try { 
+    logger.log('linkStatus:', request,);
+    res(null, await linkApi('/device/link-status', request, {})); 
+  }
+  catch (err) { logger.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+}
+
+
+async function linkConfirm(request, res) {
+  try { res(null, await linkApi('/device/link-confirm', request, { wallet: request.wallet })); }
+  catch (err) { logger.log('linkConfirm error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+}
+
+async function linkReject(request, res) {
+  try { res(null, await linkApi('/device/link-reject', request, {})); }
+  catch (err) { logger.log('linkReject error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+}
 
 
 AppSideService(
@@ -151,17 +203,24 @@ AppSideService(
     },
     onDestroy() { },
     onRequest(req, res) {
-      logger.log("=====> Received method:", req.method);
+      logger.log("===============> Received method:", req.method);
       if (req.method === "GET_MANDALA") {
         getMandala(req.request, res);
         // fetchEmulatorData(req.day, req.info, req.size, res);
       } else if (req.method === "OPEN_MANDALA") {
         openMandala(req.request, res)
-        //Отправить запрос чтобы зафиксировать открытие мандалы (для аналитики)
       } else if (req.method === "GET_COLLECTION") {
         getCollection(req.request, res);
       } else if (req.method === "GET_NEWS") {
         getNews(req.request, res);
+      } else if (req.method === "LINK_START") {
+        linkStart(req.request, res);
+      } else if (req.method === "LINK_STATUS") {
+        linkStatus(req.request, res);
+      } else if (req.method === "LINK_CONFIRM") {
+        linkConfirm(req.request, res);
+      } else if (req.method === "LINK_REJECT") {
+        linkReject(req.request, res);
       }
     }
   })

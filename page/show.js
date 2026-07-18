@@ -63,6 +63,7 @@ Page(
     },
 
     build() {
+      logger.log(`SHOW.JS`);
       this.layout = this.createLayout();
       this.widgets.loadingAnim = new LoadingAnimationComponent(hmUI);
 

@@ -1,6 +1,6 @@
 import { LocalStorage } from '@zos/storage';
 import { Time } from "@zos/sensor";
-import { STORAGE_KEYS } from './constants';
+import { STORAGE_KEYS, WEBSITE_URL } from './constants';
 
 const storage = new LocalStorage();
 
@@ -10,10 +10,14 @@ export default class AppStorage {
     let installId = storage.getItem(STORAGE_KEYS.INSTALL_ID);
 
     if (!installId) {
-      installId = 'usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+      installId = 'ZeppOS_usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
       storage.setItem(STORAGE_KEYS.INSTALL_ID, installId);
     }
     return installId;
+  }
+
+  static getLinkUrl() {
+    return `${WEBSITE_URL}/link/add/${encodeURIComponent(this.getInstallationId())}`;
   }
 
   static getRecord(key) { return storage.getItem(key); }

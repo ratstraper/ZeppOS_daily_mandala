@@ -49,6 +49,7 @@ Page(
       questionImg: null
     },
     build() {
+      logger.log(`INDEX.JS`);
       this.layout = this.createLayout();
       this.loadNews();
 
@@ -230,7 +231,7 @@ Page(
 
     createLayout() {
       const startX = px(40);            // Центрирование (40 пикселей от каждого края)      
-      const startY = px(175);           // Отступ сверху (под заголовком)
+      const startY = px(130);           // Отступ сверху (под заголовком)
       const buttonHeight = px(126);      // Высота одной плашки
       const spacing = px(25);           // Расстояние между плашками
       const buttonWidth = DEVICE_WIDTH - (2 * startX); // Ширина плашки (экран минус отступы по бокам)
@@ -255,13 +256,18 @@ Page(
     executeAction(item) {
       logger.log(`Активирован пункт: ${item.title}`);
 
-      const pushOptions = {
-        url: `page/${item.id}`,
-      };
-      if (item.params) {
-        pushOptions.params = item.params;
+      
+      if (item.id === 'collection' && !AppStorage.getRecord(STORAGE_KEYS.LINKED)) {
+        push({ url: 'page/nolink' });
+      } else {
+        let url = `page/${item.id}`;
+        // const pushOptions = { url };
+        // if (item.params) {
+        //   pushOptions.params = item.params;
+        // }
+        // push(pushOptions);
+        push({ url: `page/${item.id}` });
       }
-      push(pushOptions);
     },
 
     updateStatusText(message) {

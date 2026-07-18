@@ -120,7 +120,7 @@ Page(
       const loadingTextY = loadingAnimY + loadingAnimSize + px(22);
       const buttonWidth = width - (2 * startX);
       const buttonHeight = px(126);
-      const startY = px(175);
+      const startY = px(130);
       const spacing = px(25);
 
       return {

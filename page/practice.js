@@ -57,6 +57,7 @@ Page(
     },
 
     build() {
+      logger.log(`PRACTICE.JS`);
       this.layout = this.createLayout();
       this.buildTitle();
       this.buildIdleGroup();

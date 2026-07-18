@@ -143,3 +143,29 @@ msgstr "?"
 
 msgid "settings"
 msgstr "Настройки"
+
+// nolink screen
+msgid "no_link_title"
+msgstr "Нет связи с NFT коллекцией"
+
+msgid "no_link_details"
+msgstr "Подробнее"
+
+msgid "no_link_link"
+msgstr "Связать"
+
+msgid "no_link_help_title"
+msgstr "Мандала на вашем запястье"
+
+msgid "no_link_help_text"
+msgstr "Если вы владеете одной или несколькими NFT из коллекции Мандала души, вы можете связать их с вашими часами. И они в любой момент будут доступны вам на вашем запястье.\n\nПерейдите по ссылке на сайт, подтвердите владение кошельком, на котором есть NFT из коллекции, и ваши мандалы будут отображаться на ваших часах в разделе Коллекция."
+
+msgid "no_link_help_action"
+msgstr "Детали на сайте"
+
+// collection page
+msgid "loading"
+msgstr "Загрузка..."
+
+msgid "empty_collection"
+msgstr "Коллекция пуста"

@@ -77,6 +77,7 @@ Page(
     },
 
     build() {
+      logger.log(`QR.JS`);
       const title = i18n("help_qr_title");
       const intro = i18n("help_qr_intro");
       const domain = i18n("help_qr_domain");
@@ -163,7 +164,7 @@ Page(
         radius: px(32),
         normal_color: 0x2c2c2c,
         press_color: 0x424242,
-        text: t("common_back"),
+        text: i18n("common_back"),
         text_size: px(22),
         color: 0xffffff,
         click_func: () => {

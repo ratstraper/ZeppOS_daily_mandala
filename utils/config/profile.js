@@ -6,7 +6,7 @@ import { width, height, screenShape, platform } from "./device.js";
 const squareSize = Math.min(width, height) * 1.0;
 const profile = getProfile() || {};
 const { age, gender, region } = profile;
-const userId = `ZeppOS_${AppStorage.getInstallationId()}`;
+const userId = AppStorage.getInstallationId();
 const appInfo = getPackageInfo();
 
 

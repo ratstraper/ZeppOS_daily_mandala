@@ -34,6 +34,9 @@
           "pages": [
             "page/index",
             "page/collection",
+            "page/nolink",
+            "page/link",
+            "page/linkinfo",
             "page/help",
             "page/qr",
             "page/practice",

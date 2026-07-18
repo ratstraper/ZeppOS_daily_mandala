@@ -79,6 +79,7 @@ Page(
     },
 
     build() {
+      logger.log(`HELP.JS`);
       if (this.state.slides.length === 0) {
         logger.error("No slides provided to help page");
         return;
