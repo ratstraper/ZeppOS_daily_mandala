@@ -195,6 +195,11 @@ async function linkReject(request, res) {
   catch (err) { logger.log('linkReject error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
+async function unlink(request, res) {
+  try { res(null, await linkApi('/device/unlink', request, {})); }
+  catch (err) { logger.log('unlink error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+}
+
 
 AppSideService(
   BaseSideService({
@@ -221,6 +226,8 @@ AppSideService(
         linkConfirm(req.request, res);
       } else if (req.method === "LINK_REJECT") {
         linkReject(req.request, res);
+      } else if (req.method === "UNLINK") {
+        unlink(req.request, res);
       }
     }
   })

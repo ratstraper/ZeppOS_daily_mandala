@@ -8,5 +8,6 @@ export const WatchApi = {
   linkStatus:  (page)         => send(page, 'LINK_STATUS'),
   linkConfirm: (page, wallet) => send(page, 'LINK_CONFIRM', { wallet }),
   linkReject:  (page)         => send(page, 'LINK_REJECT'),
+  unlink:      (page)         => send(page, 'UNLINK'),
   // сюда же со временем: getMandala, getNews, getCollection
 }

@@ -1,7 +1,7 @@
 import * as hmUI from "@zos/ui";
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
-import { push } from "@zos/router";
+import { push, replace } from "@zos/router";
 import { scrollTo } from '@zos/page';
 import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@zos/interaction';
 import { BasePage } from "@zeppos/zml/base-page";
@@ -79,6 +79,13 @@ Page(
       this.buildErrorGroup();
       this.initKeyNavigation();
 
+      // Сигнал от page/settings.js ("Обновить"): проверяем и потребляем его
+      // раньше обычной cache-first логики - build() это единственный хук,
+      // который ZeppOS Page действительно вызывает на каждое новое открытие
+      // страницы (у устройства-страницы нет onResume/onPause в принципе, см.
+      // .claude/specifications.md §6).
+      if (this.consumeRefreshRequest()) return;
+
       const collection = this.loadStoredCollection();
       const linked = AppStorage.getRecord(STORAGE_KEYS.LINKED) || false;
 
@@ -86,13 +93,22 @@ Page(
         logger.log('Loading collection from local storage');
         this.setScreenState(SCREEN_RESULT, { collection });
       } else if (linked) {
-        // Кошелёк привязан, но локальной копии нет — тянем с телефона
+        // Кошелёк привязан, но локальной копии нет - тянем с телефона
         this.setScreenState(SCREEN_LOADING);
         this.getCollection();
       } else {
         this.setScreenState(SCREEN_LOADING);
         this.getCollection();
       }
+    },
+
+    consumeRefreshRequest() {
+      if (!AppStorage.getRecord(STORAGE_KEYS.COLLECTION_REFRESH)) return false;
+      AppStorage.setRecord(STORAGE_KEYS.COLLECTION_REFRESH, false);
+      logger.log('Collection refresh requested via settings, re-fetching');
+      this.setScreenState(SCREEN_LOADING);
+      this.getCollection();
+      return true;
     },
 
     // Безопасное чтение коллекции: битый JSON не должен ронять страницу
@@ -301,9 +317,15 @@ Page(
       });
     },
 
+    // replace(), не push(): если бы этот экран оставался на паузе под Settings,
+    // "Обновить" там не смог бы получить ровно один экран Коллекции обратно
+    // (устройство-страница не умеет перевыполнить build() у уже живого инстанса —
+    // см. .claude/specifications.md §6). page/settings.js сам перехватывает
+    // аппаратную кнопку "назад" и явно возвращает на page/collection, поэтому
+    // выход без нажатия кнопок на Settings всё равно не пропускает эту страницу.
     openSettings() {
       logger.log("Open settings screen");
-      push({ url: "page/settings" });
+      replace({ url: "page/settings" });
     },
 
     setVisible(widget, visible) {
@@ -373,7 +395,7 @@ Page(
               emptyMessage: i18n("no_wallet_link") || "Wallet is not linked.\nLink it on the website\nvia Settings",
             });
           } else {
-            logger.log("Error from phone:", result);
+            logger.log("Error from phone:", status);
             this.setScreenState(SCREEN_ERROR, {
               message: i18n("err_internet_connection") || "Error connecting\nto the phone",
             });

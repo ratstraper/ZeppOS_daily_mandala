@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   COLLECTION_JSON: 'collectionJson',
   LINKED: 'linked',
   LAST_NEWS: 'lastNews',
+  COLLECTION_REFRESH: 'collectionRefreshRequested',
 };
 
 export const PRACTICE_SHOW = 1;

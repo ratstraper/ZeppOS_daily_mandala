@@ -176,6 +176,28 @@ msgstr "Loading..."
 msgid "empty_collection"
 msgstr "Collection is empty"
 
+msgid "no_wallet_link"
+msgstr "Wallet is not linked.\nLink it on the website\nvia Settings"
+
+// settings page: collection maintenance actions (refresh / mint / unlink)
+msgid "settings_action_refresh_title"
+msgstr "Refresh list"
+
+msgid "settings_action_refresh_desc"
+msgstr "Check your wallet again for new mandalas"
+
+msgid "settings_action_mint_title"
+msgstr "Mint NFT"
+
+msgid "settings_action_mint_desc"
+msgstr "Open the website to mint your personal mandala"
+
+msgid "settings_action_unlink_title"
+msgstr "Unlink wallet"
+
+msgid "settings_action_unlink_desc"
+msgstr "Remove the link between this watch and your wallet"
+
 // link
 msgid "linked"
 msgstr "Linked\n[0]"
