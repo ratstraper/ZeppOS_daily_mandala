@@ -255,7 +255,7 @@ Page(
         if (wasHelp !== isHelp) {
           this.widgets.helpImg.setProperty(
             hmUI.prop.SRC,
-            isHelp ? 'icons/settings_64.png' : 'icons/settings_64bw.png'
+            isHelp ? 'icons/tools_64.png' : 'icons/tools_64bw.png'
           );
         }
       }
@@ -531,7 +531,7 @@ Page(
         y: helpY,
         w: HELP_ICON_W,
         h: HELP_ICON_H,
-        src: 'icons/settings_64bw.png',
+        src: 'icons/tools_64bw.png',
       });
 
       this.attachSelectable(this.widgets.helpImg, helpIndex, () => this.openSettings());

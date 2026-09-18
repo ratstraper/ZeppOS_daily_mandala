@@ -51,6 +51,16 @@ Communication device ⇄ companion is via `this.request({ method, request })` fr
   square layout only defines `FETCH_RESULT_TEXT`. Pages that import the color constants
   from the loader (`practice.js`) will fail to resolve them on square devices unless the
   square layout is completed. **This is a real gap, not a documented feature split.**
+- **`page/index.r.layout.js` currently fails to parse — the whole round build is broken.**
+  It has `import { NORMAL_COLOR, PRESSED_COLOR, ERROR_COLOR } from "../utils/config/constants"`
+  at the top, and two lines later declares `export const NORMAL_COLOR = 0x0E8CE6` /
+  `export const PRESSED_COLOR = 0x0B72BD` — an imported binding and a local `const`
+  sharing the same name in the same module scope, which is a hard `SyntaxError: Identifier
+  'NORMAL_COLOR' has already been declared` (confirmed with `node --check`). None of the
+  three imported names (`NORMAL_COLOR`, `PRESSED_COLOR`, `ERROR_COLOR`) are actually
+  referenced anywhere in this file's body — the file already defines and exports its own
+  `NORMAL_COLOR`/`PRESSED_COLOR`/`SELECTED_COLOR` for consumers, so the import block adds
+  nothing even where it doesn't collide. See §6.
 - Permissions declared in `app.json`: `data:os.device.info`, `device:os.alarm`,
   `device:os.local_storage`, `device:os.network`, `device:os.notification`,
   `data:user.info`.
@@ -79,13 +89,13 @@ page/linkinfo.js              Static explainer for why/how to link a wallet
 page/help.js                  Generic horizontal-swiper help/onboarding slideshow
 page/qr.js                    Generic "scan this QR to open a URL" screen
 page/settings.js              Collection settings hub: refresh / mint / unlink actions
-page/index.r.layout.js        Round-screen layout constants/helpers
+page/index.r.layout.js        Round-screen layout constants/helpers — BROKEN, does not parse, see §6 item 0
 page/index.s.layout.js        Square-screen layout constants/helpers (incomplete, see §2.1)
 utils/config/constants.js     Colors, WEBSITE_URL, STORAGE_KEYS, screen-type enum
 utils/config/device.js        Device info, i18n language-code → locale map, date formatting
 utils/config/profile.js       Builds the common request payload sent to the companion
 utils/config/storage.js       AppStorage: LocalStorage wrapper + practice-streak rules
-utils/watch-api.js            WatchApi: thin request wrapper — currently only for the link/* methods
+utils/watch-api.js            WatchApi: thin request wrapper — link/* and unlink methods
 utils/components/LoadingAnimationComponent.js   IMG_ANIM-based spinner widget
 utils/ScheduleNotification.js Schedules a delayed local notification via @zos/alarm
 utils/TextUtils.js            t(msgid, ...args): i18n string with {0},{1},… interpolation
@@ -337,15 +347,26 @@ should be treated as the project's *de facto* interaction contract:
   **No separate confirmation step** is shown before Unlink fires — the tap on the button
   *is* the confirmation. Deliberate simplicity choice (no existing confirm/cancel pattern
   is reused here); revisit if accidental unlinks turn out to be a problem in practice.
+- **Button styling**: all three buttons render with the same `NORMAL_COLOR`/`PRESSED_COLOR`
+  (shared gray, imported from `constants.js`), `UI.btnH = px(72)`, `UI.btnRadius = px(36)`
+  (a full pill at that height). **The `actions` array in `renderActions()` still carries a
+  distinct `normalColor`/`pressColor` per action** (gray/blue/red, the original
+  color-coded design) **but `buildActionSection()` no longer reads them** — it's hardcoded
+  to `NORMAL_COLOR`/`PRESSED_COLOR` with the per-action values commented out at the call
+  site. The three properties are dead data now; see §6.
 
 ---
 
 ## 5. Core Logic, Rules & Data Contracts
 
 ### 5.1 Constants (`utils/config/constants.js`)
-- Colors: `DEFAULT_COLOR 0xfc6950`, `DEFAULT_COLOR_TRANSPARENT 0xfeb4a8`,
-  `NORMAL_COLOR 0x2C2C2C`, `PRESSED_COLOR 0x4A4A4A` (overridden per-layout on round
-  screens — see §2.1).
+- Colors: `NORMAL_COLOR 0x2C2C2C`, `PRESSED_COLOR 0x4A4A4A` (overridden per-layout on round
+  screens — see §2.1), `ERROR_COLOR 0xCC3344`. `ERROR_COLOR` is the newest addition, now
+  used for error-state text in `page/link.js` (`showDone(false, …)`) and `page/show.js`
+  (its error text widget) in place of the `0xcc3344`/`0xbdbdbd` literals those two files
+  used to hardcode locally. `DEFAULT_COLOR`/`DEFAULT_COLOR_TRANSPARENT` (previously
+  `0xfc6950`/`0xfeb4a8`) have been **removed** — grep confirms nothing references them
+  anymore.
 - `WEBSITE_URL = "https://mandala.garageno9.site"`.
 - `STORAGE_KEYS`: `INSTALL_ID, MANDALA_DAY, MANDALA_PATH, STREAK_DAYS, BEST_STREAK,
   COLLECTION_JSON, LINKED, LAST_NEWS, COLLECTION_REFRESH`. `COLLECTION_REFRESH` is the odd
@@ -443,12 +464,14 @@ Each wraps `page.request({ method, request: { ...Profile.createRequestData(), ..
 A code comment (`// сюда же со временем: getMandala, getNews, getCollection`) states the
 intent to migrate the other request call sites onto this wrapper — **as of now that
 migration has not happened**; `page/index.js`, `page/practice.js` (indirectly via
-`page/show.js`), `page/collection.js`, `page/nolink.js`, `page/show.js`, and
-`page/settings.js`'s own `refreshCollection()` all still call `this.request(...)` directly
-with a hand-assembled payload. `unlink` is the one new exception: `page/settings.js`'s
-`unlinkWallet()` goes through `WatchApi.unlink(page)` rather than adding another
-direct-call site, per this section's own guidance. Any further new call site should follow
-`unlink`'s example, not the older ones.
+`page/show.js`), `page/collection.js`, and `page/nolink.js` all still call
+`this.request(...)` directly with a hand-assembled payload. `unlink` is the one new
+exception: `page/settings.js`'s `unlinkWallet()` goes through `WatchApi.unlink(page)`
+rather than adding another direct-call site, per this section's own guidance.
+`page/settings.js`'s `refreshCollection()` calls **neither** — it makes no network request
+of its own at all (see §4.10/§4.4: it signals `page/collection.js` via a storage flag and
+lets that page do the fetch). Any further new call site should follow `unlink`'s example,
+not the older ones.
 
 ---
 
@@ -458,6 +481,25 @@ These are places where behavior deviates from what a reader would expect from on
 the codebase alone, or where two call sites disagree. Recorded here so future changes fix
 them deliberately (in the spec first) rather than by accident.
 
+> **Build-blocking right now: item 0.** `page/index.r.layout.js` does not parse — every
+> round-screen build is currently broken. See below.
+
+0. **`page/index.r.layout.js` has a duplicate-declaration `SyntaxError` — round builds
+   cannot compile.** It imports `NORMAL_COLOR`, `PRESSED_COLOR`, `ERROR_COLOR` from
+   `utils/config/constants.js`, then two lines later declares
+   `export const NORMAL_COLOR = 0x0E8CE6` and `export const PRESSED_COLOR = 0x0B72BD` —
+   an imported binding and a local `const` with the same name in the same module scope.
+   Confirmed with `node --check`: `SyntaxError: Identifier 'NORMAL_COLOR' has already been
+   declared`. None of the three imported names are used anywhere in the file's body (the
+   file already defines and exports its own color constants for consumers like
+   `page/practice.js`, `page/collection.js`, `page/nolink.js`), so the fix is almost
+   certainly to delete the import block entirely rather than rename anything. Likely
+   introduced while adding `ERROR_COLOR` support during the same styling pass that touched
+   `page/help.js`, `page/link.js`, `page/linkinfo.js`, `page/qr.js`, `page/show.js`, and
+   `page/index.s.layout.js` (which imports the same three names but, having no local
+   `NORMAL_COLOR`/`PRESSED_COLOR` declarations of its own, only ends up with three more
+   unused-but-harmless imports rather than a syntax error). Not fixed as part of this spec
+   update — only asked to document the code as it stands.
 1. **`GET_COLLECTION` response field name mismatch.** `page/collection.js` branches on
    `data.status` (`"OK"` / `"NO_LINK"` / other-as-error). `page/nolink.js` branches on
    `data.result` (`"Ok"` / `"NO_LINK"`). The companion (`app-side/index.js getCollection`)
@@ -529,6 +571,13 @@ them deliberately (in the spec first) rather than by accident.
       instance via `replace()`, as `page/collection.js` now does, or (b) a background poll
       while the *current* page is different (as `page/nolink.js`'s `checkLinkInBackground`
       does, correctly, from `build()`).**
+11. **`page/settings.js`'s per-action button colors are dead data.** `renderActions()`
+    still builds an `actions` array with a distinct `normalColor`/`pressColor` per entry
+    (gray for Refresh, blue for Mint, red for Unlink — the original color-coded design),
+    but `buildActionSection()` no longer reads `action.normalColor`/`action.pressColor` —
+    it's hardcoded to the shared `NORMAL_COLOR`/`PRESSED_COLOR` from `constants.js`, with
+    the per-action reads commented out at the call site (`normal_color: NORMAL_COLOR,
+    //action.normalColor`). All three buttons render identically today. See §4.10.
 
 ---
 

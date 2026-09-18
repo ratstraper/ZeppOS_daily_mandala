@@ -41,9 +41,10 @@ const UI = {
 
   btnH: px(72),
   btnRadius: px(36),
+  btnTextSize: px(28),
 
   // запас снизу, чтобы кнопку не срезал круглый экран при прокрутке до конца
-  bottomPad: px(90),
+  bottomPad: px(80),
 };
 
 function measureText(text, size, textWidth) {
@@ -119,7 +120,7 @@ Page(
         normal_color: 0x1f8ed6,
         press_color: 0x156fa8,
         text: i18n("no_link_help_action"),
-        text_size: px(24),
+        text_size: UI.btnTextSize,
         color: 0xffffff,
         click_func: () => {
           hapticStrong();

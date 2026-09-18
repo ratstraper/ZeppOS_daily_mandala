@@ -7,7 +7,7 @@ import { onKey, offKey, KEY_EVENT_CLICK } from "@zos/interaction";
 import { BasePage } from "@zeppos/zml/base-page";
 import AppStorage from "../utils/config/storage.js";
 import { WatchApi } from "../utils/watch-api";
-import { STORAGE_KEYS, WEBSITE_URL } from "../utils/config/constants.js";
+import { STORAGE_KEYS, WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
 import { TITLE } from "zosLoader:./index.[pf].layout.js";
 
@@ -26,8 +26,8 @@ const UI = {
 
   descSize: px(22),
 
-  btnH: px(64),
-  btnRadius: px(32),
+  btnH: px(72),   
+  btnRadius: px(36),
   btnTextSize: px(28),
 
   gapDescToBtn: px(16),
@@ -157,8 +157,8 @@ Page(
         w: contentW,
         h: UI.btnH,
         radius: UI.btnRadius,
-        normal_color: action.normalColor,
-        press_color: action.pressColor,
+        normal_color: NORMAL_COLOR, //action.normalColor,
+        press_color: PRESSED_COLOR, //action.pressColor,
         text: label,
         text_size: UI.btnTextSize,
         color: 0xffffff,

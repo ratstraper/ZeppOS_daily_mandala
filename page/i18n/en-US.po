@@ -200,7 +200,7 @@ msgstr "Remove the link between this watch and your wallet"
 
 // link
 msgid "linked"
-msgstr "Linked\n[0]"
+msgstr "Linked\n{0}"
 
 msgid "qr_expired"
 msgstr "QR expired"
@@ -209,7 +209,7 @@ msgid "waiting_wallet"
 msgstr "Waiting for wallet..."
 
 msgid "link_collection"
-msgstr "Link the collection\nin wallet\n[0]\nto this watch?"
+msgstr "Link the collection\nin wallet\n{0}\nto this watch?"
 
 msgid "confirm"
 msgstr "Confirm"

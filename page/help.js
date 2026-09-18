@@ -33,6 +33,7 @@ const UI = {
   textW: width - px(56),
   textSize: px(24),
 
+  btnTextSize: px(28),
   actionX: px(28),
   actionW: width - px(56),
   actionH: px(72),
@@ -174,11 +175,11 @@ Page(
           y: UI.actionY,
           w: UI.actionW,
           h: UI.actionH,
-          radius: px(36),
+          radius: UI.actionH / 2,
           normal_color: 0x1f8ed6,
           press_color: 0x156fa8,
           text: i18n(slide.action.labelKey),
-          text_size: px(24),
+          text_size: UI.btnTextSize,
           color: 0xffffff,
           click_func: () => {
             hapticStrong();

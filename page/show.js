@@ -18,7 +18,8 @@ import { TITLE } from "zosLoader:./index.[pf].layout.js";
 import {
   PRACTICE_SHOW,
   COLLECTION_SHOW,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  ERROR_COLOR
 } from "../utils/config/constants.js";
 const logger = Logger.getLogger("show_mandala_screen");
 
@@ -130,8 +131,8 @@ Page(
         x: this.layout.resultX, y: this.layout.resultY, w: squareSize, h: squareSize, src: "",
       });
       this.widgets.errorText = this.widgets.resultGroup.createWidget(hmUI.widget.TEXT, {
-        x: px(48), y: this.layout.loadingTextY, w: width - px(96), h: px(150),
-        color: 0xbdbdbd, text_size: px(24), text_style: hmUI.text_style.WRAP,
+        x: px(24), y: px(150), w: width - px(48), h: px(200),
+        color: ERROR_COLOR, text_size: px(28), text_style: hmUI.text_style.WRAP,
         align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V, text: "",
       });
       this.setVisible(this.widgets.mandalaImg, false);
@@ -224,7 +225,7 @@ Page(
             }
           } else {
             logger.log("Phone returned error:", result);
-            this.setScreenState(SCREEN_ERROR, { message: i18n("err_internet_connection") });
+            this.setScreenState(SCREEN_ERROR, { message: i18n("err_internet_connection") }); 
           }
         })
         .catch((err) => {

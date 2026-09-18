@@ -10,10 +10,27 @@ import { WatchApi } from '../utils/watch-api'
 import AppStorage from '../utils/config/storage.js';
 import { STORAGE_KEYS } from '../utils/config/constants';
 import { log as Logger, px } from "@zos/utils";
+import {
+  ERROR_COLOR
+} from "../utils/config/constants.js";
 
 const logger = Logger.getLogger("mandala_day");
 const { width: W, height: H } = getDeviceInfo()
 const POLL_MS = 4000
+const UI = {
+  // padX: px(28),
+  // topY: px(120),
+
+  // descSize: px(22),
+
+  btnH: px(72),   
+  btnRadius: px(36),
+  btnTextSize: px(28),
+
+  // gapDescToBtn: px(16),
+  // gapBetweenSections: px(40),
+  // bottomPad: px(80),
+};
 
 Page(BasePage({
   state: { widgets: [], timer: null, ticks: 0, maxTicks: 150, busy: false },
@@ -35,7 +52,7 @@ Page(BasePage({
         else if (d.link === 'linked') this.showDone(true, t("linked", d.wallet || ''))
         else this.startLink()
       })
-      .catch(() => this.showDone(false, t("err_internet_connection")))
+      .catch(() => this.showDone(false, t("err_internet_connection"))) 
   },
 
   startLink() {
@@ -111,7 +128,7 @@ Page(BasePage({
   showWait(msg) {
     this.clear()
     this.add(widget.TEXT, {
-      x: 0, y: Math.floor(H * 0.42), w: W, h: 80,
+      x: 0, y: Math.floor(H * 0.42), w: W, h: px(80), 
       text: msg, color: 0x888888, text_size: 26,
       align_h: align.CENTER_H, text_style: text_style.WRAP
     })
@@ -160,14 +177,16 @@ Page(BasePage({
     })
     this.add(widget.BUTTON, {
       x: Math.floor(W * 0.12), y: Math.floor(H * 0.46),
-      w: Math.floor(W * 0.76), h: 56, radius: 28,
+      w: Math.floor(W * 0.76), h: UI.btnH, radius: UI.btnRadius,
       text: t("confirm"), normal_color: 0x00a86b, press_color: 0x007a4d,
+      text_size: UI.btnTextSize,
       click_func: () => this.confirm(wallet)
     })
     this.add(widget.BUTTON, {
       x: Math.floor(W * 0.12), y: Math.floor(H * 0.64),
-      w: Math.floor(W * 0.76), h: 56, radius: 28,
+      w: Math.floor(W * 0.76), h: UI.btnH, radius: UI.btnRadius,
       text: t("cancel"), normal_color: 0x333333, press_color: 0x222222,
+      text_size: UI.btnTextSize,
       click_func: () => this.reject()
     })
   },
@@ -175,15 +194,16 @@ Page(BasePage({
   showDone(ok, msg) {
     this.clear()
     this.add(widget.TEXT, {
-      x: 0, y: Math.floor(H * 0.30), w: W, h: 140,
-      text: msg, color: ok ? 0x00a86b : 0xcc3344, text_size: 28,
-      align_h: align.CENTER_H, text_style: text_style.WRAP
+      x: px(48), y: Math.floor(H * 0.20), w: W - px(96), h: px(200),
+      text: msg, color: ok ? 0x00a86b : ERROR_COLOR, text_size: px(28),
+      align_h: align.CENTER_H, align_v: align.CENTER_V, text_style: text_style.WRAP
     })
     if (!ok) {
       this.add(widget.BUTTON, {
         x: Math.floor(W * 0.2), y: Math.floor(H * 0.62),
-        w: Math.floor(W * 0.6), h: 56, radius: 28,
+        w: Math.floor(W * 0.6), h: UI.btnH, radius: UI.btnRadius,
         text: t("retry"), normal_color: 0x2d6cdf, press_color: 0x1f4fa3,
+        text_size: UI.btnTextSize,
         click_func: () => this.restore()
       })
     }

@@ -3,8 +3,7 @@ import { getText as i18n } from "@zos/i18n";
 import { px } from "@zos/utils";
 
 import {
-  DEFAULT_COLOR,
-  DEFAULT_COLOR_TRANSPARENT,
+  ERROR_COLOR
 } from "../utils/config/constants";
 import { DEVICE_WIDTH } from "../utils/config/device";
 
@@ -27,9 +26,9 @@ export const FETCH_RESULT_TEXT = {
 export const TITLE = (layout, text) => {
   return {
     x: 0,
-    y: px(38),      //layout.titleY, 40
+    y: px(38),
     w: DEVICE_WIDTH,
-    h: px(56),      //layout.titleH, 60
+    h: px(56),
     color: 0xffffff,
     text_size: px(40),
     text_style: hmUI.text_style.NONE,

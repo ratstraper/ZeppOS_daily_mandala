@@ -2,8 +2,7 @@ import * as hmUI from "@zos/ui";
 import { px } from "@zos/utils";
 
 import {
-  DEFAULT_COLOR,
-  DEFAULT_COLOR_TRANSPARENT,
+  ERROR_COLOR
 } from "../utils/config/constants";
 import { DEVICE_WIDTH } from "../utils/config/device";
 
