@@ -118,6 +118,23 @@ function getMandala(request, res) {
     logger.log('Error downloading in Side Service:', event.code, event.message);
     res(null, { result: `Error: Download failed ${event.code}, ${event.message}` });
   };
+
+  downloadTask.onProgress = (ev) => {
+    console.log(ev.progress)
+    console.log(ev.total)
+    console.log(ev.loaded)
+  }
+  downloadTask.onCancel = (event) => {
+    logger.log('Download canceled by the phone');
+    res(null, { result: "Error: Download canceled" });
+  }
+  downloadTask.onTimeout = (event) => {
+    logger.log('Download timed out');
+    res(null, { result: "Error: Download timed out" });
+  }
+  downloadTask.onComplete = (event) => {
+    logger.log('Download task completed');
+  }
 }
 
 async function getNews(request, res) {

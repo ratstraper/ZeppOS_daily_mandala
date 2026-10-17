@@ -9,7 +9,7 @@ import AppStorage from "../utils/config/storage.js";
 import { WatchApi } from "../utils/watch-api";
 import { STORAGE_KEYS, WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
-import { TITLE } from "zosLoader:./index.[pf].layout.js";
+import { TITLE, SECONDARY_BUTTON_HEIGHT } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
 const vibrator = new Vibrator();
@@ -26,8 +26,8 @@ const UI = {
 
   descSize: px(22),
 
-  btnH: px(72),   
-  btnRadius: px(36),
+  btnH: SECONDARY_BUTTON_HEIGHT, //px(72),   
+  btnRadius: btnH / 2, //px(36),
   btnTextSize: px(28),
 
   gapDescToBtn: px(16),

@@ -64,6 +64,7 @@ Page(
   BasePage({
     state: {
       url: "https://mandala.garageno9.site",
+      fullScreen: false
     },
 
     onInit(params) {
@@ -71,6 +72,7 @@ Page(
       try {
         const parsed = JSON.parse(params);
         if (parsed?.url) this.state.url = parsed.url;
+        if (parsed?.full) this.state.fullScreen = parsed.full;
       } catch (e) {
         logger.log("params parse failed", e);
       }
@@ -87,42 +89,53 @@ Page(
       const introLayout = measureText(intro, UI.introSize, UI.introW);
       const textLayout = measureText(text, UI.textSize, UI.textW);
 
-      createWidget(widget.TEXT, {
-        x: UI.titleX,
-        y: UI.titleY,
-        w: UI.titleW,
-        h: titleLayout.height,
-        color: 0xffffff,
-        text_size: UI.titleSize,
-        text_style: text_style.WRAP,
-        align_h: align.CENTER_H,
-        align_v: align.TOP,
-        text: title,
-      });
 
-      createWidget(widget.TEXT, {
-        x: UI.introX,
-        y: UI.introY,
-        w: UI.introW,
-        h: introLayout.height,
-        color: 0xbdbdbd,
-        text_size: UI.introSize,
-        text_style: text_style.WRAP,
-        align_h: align.CENTER_H,
-        align_v: align.TOP,
-        text: intro,
-      });
+      if(this.state.fullScreen == false) {
+        createWidget(widget.TEXT, {
+          x: UI.titleX,
+          y: UI.titleY,
+          w: UI.titleW,
+          h: titleLayout.height,
+          color: 0xffffff,
+          text_size: UI.titleSize,
+          text_style: text_style.WRAP,
+          align_h: align.CENTER_H,
+          align_v: align.TOP,
+          text: title,
+        });
 
-      const bgSize = UI.qrSize + UI.qrPad * 2;
-      const bgX = (width - bgSize) / 2;
-      const bgY = UI.qrY;
+        createWidget(widget.TEXT, {
+          x: UI.introX,
+          y: UI.introY,
+          w: UI.introW,
+          h: introLayout.height,
+          color: 0xbdbdbd,
+          text_size: UI.introSize,
+          text_style: text_style.WRAP,
+          align_h: align.CENTER_H,
+          align_v: align.TOP,
+          text: intro,
+        });
+      }
+
+      let qrSize = UI.qrSize;
+      let bgSize = UI.qrSize + UI.qrPad * 2;
+      let bgY = UI.qrY;
+
+      if(this.state.fullScreen == true) {
+        bgSize += UI.titleSize + UI.introSize * 2;
+        qrSize += UI.titleSize + UI.introSize * 2;
+        bgY -= UI.titleSize + UI.introSize * 2;
+      }
+      
+      let bgX = (width - bgSize) / 2;
 
       createWidget(widget.QRCODE, {
         content: this.state.url,
         x: bgX + UI.qrPad,
         y: bgY + UI.qrPad,
-        w: UI.qrSize,
-        h: UI.qrSize,
+        w: qrSize,
+        h: qrSize,
         bg_x: bgX,
         bg_y: bgY,
         bg_w: bgSize,
@@ -143,18 +156,20 @@ Page(
         text: domain,
       });
 
-      createWidget(widget.TEXT, {
-        x: UI.textX,
-        y: bgY + bgSize + px(46),
-        w: UI.textW,
-        h: textLayout.height,
-        color: 0xc7c7c7,
-        text_size: UI.textSize,
-        text_style: text_style.WRAP,
-        align_h: align.CENTER_H,
-        align_v: align.TOP,
-        text,
-      });
+      if(this.state.fullScreen == false) {
+        createWidget(widget.TEXT, {
+          x: UI.textX,
+          y: bgY + bgSize + px(46),
+          w: UI.textW,
+          h: textLayout.height,
+          color: 0xc7c7c7,
+          text_size: UI.textSize,
+          text_style: text_style.WRAP,
+          align_h: align.CENTER_H,
+          align_v: align.TOP,
+          text,
+        });
+      }
 
       createWidget(widget.BUTTON, {
         x: UI.backX,

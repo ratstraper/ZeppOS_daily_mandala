@@ -169,7 +169,20 @@ Page(
         text,
       });
 
-      if (slide.action) {
+      if (slide.label) {
+        createWidget(widget.TEXT, {
+          x: offsetX + UI.actionX,
+          y: UI.actionY,
+          w: UI.actionW,
+          h: UI.actionH,
+          color: 0xffffff,
+          text_size: UI.titleSize,
+          text_style: text_style.WRAP,
+          align_h: align.CENTER_H,
+          align_v: align.CENTER_V,
+          text: i18n(slide.label),
+        });
+      } else if (slide.action) {
         createWidget(widget.BUTTON, {
           x: offsetX + UI.actionX,
           y: UI.actionY,
@@ -188,6 +201,7 @@ Page(
               url: "page/qr",
               params: JSON.stringify({
                 url: slide.action.url,
+                full: slide.action.full
               }),
             });
           },

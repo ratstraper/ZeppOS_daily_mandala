@@ -11,6 +11,8 @@ export const NORMAL_COLOR = 0x0E8CE6;
 export const PRESSED_COLOR = 0x0B72BD;
 export const SELECTED_COLOR = 0x3397de;
 
+export const SECONDARY_BUTTON_HEIGHT = px(100);
+
 export const FETCH_RESULT_TEXT = {
   x: px(56),
   y: px(74),

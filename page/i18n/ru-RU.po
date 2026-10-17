@@ -68,6 +68,9 @@ msgstr "Сминтите личную мандалу на сайте.\n\nПод�
 msgid "help_main_slide3_action"
 msgstr "Сканировать для минта"
 
+msgid "label_next"
+msgstr "Далее →"
+
 msgid "help_qr_title"
 msgstr "Минт и привязка"
 
@@ -88,23 +91,67 @@ msgid "help_practice_slide1_title"
 msgstr "Daily Practice"
 
 msgid "help_practice_slide1_text"
-msgstr "Each day has its own mandala.\nOpen it. Breathe with it.\nEven 3 minutes is enough.\n\nStreak — your current\nseries of daily sessions.\nBest — your personal record."
+msgstr "Each day has its own reflection\nin Mandala.\n\nOpen it. Look into it.\nBreathe with it.\nEven 3 minutes is enough."
 
 msgid "help_practice_slide2_title"
-msgstr "One date.\nOne mandala."
+msgstr "Focus method"
 
 msgid "help_practice_slide2_text"
-msgstr "Every calendar date has\nexactly one mandala.\n\nOnly one person\ncan ever own it.\n\nYour birthday.\nA day that changed your life.\nIt may still be unclaimed."
+msgstr "Look from edge to center\nand back.\nLet your gaze flow through\nthe lines, colors, and patterns\nfor 3 mins.\nObserve your current state."
 
 msgid "help_practice_slide3_title"
-msgstr "One own."
+msgstr "Notice your"
 
 msgid "help_practice_slide3_text"
-msgstr "See your personal mandala\nand check if your date\nis still available.\n\nOnce taken —\nit is gone forever."
+msgstr "Streak - your current series\nof daily sessions.\n\nBest - your personal record\nof streak."
 
 msgid "help_practice_slide3_action"
 msgstr "Visit website →"
 
+//deep practice help
+msgid "deep_button"
+msgstr "Узнать больше"
+
+msgid "deep_practice_slide1_title"
+msgstr "Go deeper"
+
+msgid "deep_practice_slide1_text"
+msgstr "Daily Mandala helps\nyou build the habit.\n\nYour Birth Mandala makes\nthe practice personal."
+
+msgid "deep_practice_slide1_action"
+msgstr "Learn more →"
+
+msgid "deep_practice_slide2_title"
+msgstr "One Date"
+
+msgid "deep_practice_slide2_text"
+msgstr "A day that changed\nyour life:\nYour birthday or any\nmeaningful date.\nIt may still be unclaimed."
+
+msgid "deep_practice_slide3_title"
+msgstr "One Mandala"
+
+msgid "deep_practice_slide3_text"
+msgstr "Every calendar date has\nexactly one Mandala.\nOnce minted, that date \nis gone forever."
+
+msgid "deep_practice_slide4_title"
+msgstr "One Owner"
+
+msgid "deep_practice_slide4_text"
+msgstr "Only one person\ncan own each date.\n\nIf it's yours,\nit stays yours forever.\nWill it be you?"
+
+msgid "deep_practice_slide4_action"
+msgstr "Check your date →"
+
+msgid "deep_practice_slide5_title"
+msgstr "Make it you"
+
+msgid "deep_practice_slide5_text"
+msgstr "Mint your Birth Mandala\non the website.\n\nLink your wallet to see\nit in your Collection."
+
+msgid "deep_practice_slide5_action"
+msgstr "Scan to continue →"
+
+///////////////
 msgid "month_january"
 msgstr "Янв"
 

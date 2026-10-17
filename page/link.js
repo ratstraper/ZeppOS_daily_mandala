@@ -47,10 +47,22 @@ Page(BasePage({
     WatchApi.linkStatus(this)
       .then(d => {
         logger.log('restore:', d)
-        if (!d || d.status !== 'OK') return this.showDone(false, (d && d.error) || 'Error')
-        if (d.link === 'pending_watch_confirm' && d.wallet) this.showConfirm(d.wallet)
-        else if (d.link === 'linked') this.showDone(true, t("linked", d.wallet || ''))
-        else this.startLink()
+        if (!d || d.status === 'ERROR') {
+          if (d.link !== 'not found') {
+            console.log('restore: error, showDone', d.link)
+            this.showDone(false, (d && d.error) || 'Error')
+          }
+        }
+        if (d.link === 'pending_watch_confirm' && d.wallet) {
+          console.log('restore: pending_watch_confirm, showConfirm', d)
+          this.showConfirm(d.wallet)
+        } else if (d.link === 'linked') {
+          console.log('restore: linked, showDone', d)
+          this.showDone(true, t("linked", d.wallet || ''))
+        } else {
+          console.log('restore: startLink', d)
+          this.startLink()
+        }
       })
       .catch(() => this.showDone(false, t("err_internet_connection"))) 
   },
@@ -58,6 +70,7 @@ Page(BasePage({
   startLink() {
     WatchApi.linkStart(this)
       .then(d => {
+        console.log('startLink:', d)
         if (!d || d.status !== 'OK' || !d.qr)
           return this.showDone(false, (d && d.error) || 'Error')
         this.state.maxTicks = Math.ceil(((d.ttlSec || 600) * 1000) / POLL_MS)
