@@ -80,17 +80,14 @@ Page(
 
     build() {
       logger.log(`QR.JS`);
-      const title = i18n("help_qr_title");
-      const intro = i18n("help_qr_intro");
       const domain = i18n("help_qr_domain");
-      const text = i18n("help_qr_text");
 
-      const titleLayout = measureText(title, UI.titleSize, UI.titleW);
-      const introLayout = measureText(intro, UI.introSize, UI.introW);
-      const textLayout = measureText(text, UI.textSize, UI.textW);
+      if (!this.state.fullScreen) {
+        const title = i18n("help_qr_title");
+        const intro = i18n("help_qr_intro");
+        const titleLayout = measureText(title, UI.titleSize, UI.titleW);
+        const introLayout = measureText(intro, UI.introSize, UI.introW);
 
-
-      if(this.state.fullScreen == false) {
         createWidget(widget.TEXT, {
           x: UI.titleX,
           y: UI.titleY,
@@ -118,17 +115,18 @@ Page(
         });
       }
 
+      const fullScreenOffset = UI.titleSize + UI.introSize * 2;
       let qrSize = UI.qrSize;
       let bgSize = UI.qrSize + UI.qrPad * 2;
       let bgY = UI.qrY;
 
-      if(this.state.fullScreen == true) {
-        bgSize += UI.titleSize + UI.introSize * 2;
-        qrSize += UI.titleSize + UI.introSize * 2;
-        bgY -= UI.titleSize + UI.introSize * 2;
+      if (this.state.fullScreen) {
+        bgSize += fullScreenOffset;
+        qrSize += fullScreenOffset;
+        bgY -= fullScreenOffset;
       }
-      
-      let bgX = (width - bgSize) / 2;
+
+      const bgX = (width - bgSize) / 2;
 
       createWidget(widget.QRCODE, {
         content: this.state.url,
@@ -156,7 +154,10 @@ Page(
         text: domain,
       });
 
-      if(this.state.fullScreen == false) {
+      if (!this.state.fullScreen) {
+        const text = i18n("help_qr_text");
+        const textLayout = measureText(text, UI.textSize, UI.textW);
+
         createWidget(widget.TEXT, {
           x: UI.textX,
           y: bgY + bgSize + px(46),
