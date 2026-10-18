@@ -245,9 +245,9 @@ Page(
       })
         .then((data) => {
           this.state.checking = false;
-          const { result = "", collection = [] } = data;
+          const { status = "", collection = [] } = data;
 
-          if (result === "Ok") {
+          if (status === "OK") {
             logger.log('Link confirmed by phone, switching to collection');
             AppStorage.setRecord(STORAGE_KEYS.LINKED, true);
             AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, JSON.stringify(collection));
@@ -255,7 +255,7 @@ Page(
             if (this.state.visible) {
               replace({ url: "page/collection" });
             }
-          } else if (result === "NO_LINK") {
+          } else if (status === "NO_LINK") {
             AppStorage.setRecord(STORAGE_KEYS.LINKED, false);
           }
           // Любой другой ответ молча игнорируем — экран самодостаточен

@@ -7,9 +7,9 @@ import {
 } from "../utils/config/constants";
 import { DEVICE_WIDTH } from "../utils/config/device";
 
-export const NORMAL_COLOR = 0x0E8CE6;
-export const PRESSED_COLOR = 0x0B72BD;
-export const SELECTED_COLOR = 0x3397de;
+export const PRACTICE_NORMAL_COLOR = 0x0E8CE6;
+export const PRACTICE_PRESSED_COLOR = 0x0B72BD;
+export const PRACTICE_SELECTED_COLOR = 0x3397de;
 
 export const SECONDARY_BUTTON_HEIGHT = px(100);
 

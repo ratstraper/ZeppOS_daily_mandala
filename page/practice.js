@@ -7,7 +7,7 @@ import { getDeviceInfo } from "@zos/device";
 import { push } from '@zos/router';
 import { scrollTo } from '@zos/page';
 import AppStorage from "../utils/config/storage.js";
-import { NORMAL_COLOR, PRESSED_COLOR, TITLE, SECONDARY_BUTTON_HEIGHT } from "zosLoader:./index.[pf].layout.js";
+import { PRACTICE_NORMAL_COLOR, PRACTICE_PRESSED_COLOR, TITLE, SECONDARY_BUTTON_HEIGHT } from "zosLoader:./index.[pf].layout.js";
 import {
   WEBSITE_URL, PRACTICE_SHOW, STORAGE_KEYS,
   NORMAL_COLOR as MENU_NORMAL_COLOR, PRESSED_COLOR as MENU_PRESSED_COLOR,
@@ -158,7 +158,7 @@ Page(
 
       this.widgets.bgRect = this.widgets.idleGroup.createWidget(hmUI.widget.FILL_RECT, {
         x: btnX, y: btnY, w: btnWidth, h: btnHeight,
-        color: NORMAL_COLOR, radius: btnRadius
+        color: PRACTICE_NORMAL_COLOR, radius: btnRadius
       });
 
       const iconSize = px(80);
@@ -184,14 +184,14 @@ Page(
       });
 
       clickArea.addEventListener(hmUI.event.CLICK_DOWN, () => {
-        this.widgets.bgRect.setProperty(hmUI.prop.COLOR, PRESSED_COLOR);
+        this.widgets.bgRect.setProperty(hmUI.prop.COLOR, PRACTICE_PRESSED_COLOR);
         this.state.selectedIndex = -1; this.syncFocus();
       });
       clickArea.addEventListener(hmUI.event.MOVE, () => {
-        this.widgets.bgRect.setProperty(hmUI.prop.COLOR, NORMAL_COLOR);
+        this.widgets.bgRect.setProperty(hmUI.prop.COLOR, PRACTICE_NORMAL_COLOR);
       });
       clickArea.addEventListener(hmUI.event.CLICK_UP, () => {
-        this.widgets.bgRect.setProperty(hmUI.prop.COLOR, NORMAL_COLOR);
+        this.widgets.bgRect.setProperty(hmUI.prop.COLOR, PRACTICE_NORMAL_COLOR);
         this.handleOpenClick();
       });
 
