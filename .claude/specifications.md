@@ -72,6 +72,7 @@ app.json                      App manifest: pages, permissions, platforms, i18n
 app-side/index.js             Companion (phone) request router + backend integration
 app-service/delayedNewsService.js   Alarm-fired one-shot notification
 page/index.js                 Main menu (Practice / Collection / Help)
+page/practiceintro.js         One-time-until-dismissed "soft" onboarding before page/practice
 page/practice.js              Daily-practice idle screen (streak, Open button)
 page/show.js                  Generic "show a mandala image" screen (loading/result/error)
 page/collection.js            NFT collection list (loading/result/error, empty state)
@@ -116,12 +117,19 @@ should be treated as the project's *de facto* interaction contract:
 
 ### 4.1 `page/index.js` — Main menu
 - **Role**: navigation hub, first screen.
-- **Menu items**: Practice → `page/practice`, Collection → `page/collection` (gated, see
-  below), plus a persistent help icon → `page/help` with `SLIDES_MAIN` (3 slides, last one
-  has a "visit website" action → `page/qr`, tagged `ref: "help_main"` — see §5.6).
+- **Menu items**: Practice → `page/practice` (first visit only: see the onboarding rule
+  below), Collection → `page/collection` (gated, see below), plus a persistent help icon →
+  `page/help` with `SLIDES_MAIN` (3 slides, last one has a "visit website" action →
+  `page/qr`, tagged `ref: "help_main"` — see §5.6).
 - **Rule — Collection gating**: `executeAction()` checks
   `AppStorage.getRecord(STORAGE_KEYS.LINKED)`. If falsy, tapping Collection routes to
   `page/nolink` instead of `page/collection`.
+- **Rule — Practice first-run onboarding**: `executeAction()` checks
+  `AppStorage.getRecord(STORAGE_KEYS.PRACTICE_INTRO_SEEN)` when `item.id === 'practice'`.
+  If falsy, pushes `page/practiceintro` instead of going to `page/practice` directly — and
+  **keeps doing so on every tap** until the user dismisses it for good (see §4.1a), not
+  just the first time. Once the flag is set, every later tap on Practice goes straight to
+  `page/practice`.
 - **CTA tracking**: `executeAction()` fires `CTA.OPEN_MAIN_HELP` (§5.6) whenever
   `item.id === 'help'` — this one spot covers both touch and physical-`KEY_SELECT`
   activation, since both paths call `executeAction()`.
@@ -135,34 +143,74 @@ should be treated as the project's *de facto* interaction contract:
   fixed: it now schedules the alarm whenever they're present and early-returns `0`
   otherwise.
 
+### 4.1a `page/practiceintro.js` — "Soft" onboarding before Practice
+- **Role**: the one screen standing between `page/index.js`'s Practice menu item and
+  `page/practice.js`, for as long as `STORAGE_KEYS.PRACTICE_INTRO_SEEN` is falsy (§4.1).
+  Reached via `push()` (so hardware-back from here returns to the main menu, same as any
+  other `push()`'d screen in this app).
+- **Layout**: a single vertically free-scrolling page (no `setScrollMode` call — relies on
+  ZeppOS's default free-scroll because content height exceeds the screen, same mechanism
+  `page/linkinfo.js` uses), built with a running Y cursor sized from `getTextLayout()`
+  (the same measure-then-place pattern `page/linkinfo.js` and `page/settings.js` use). No
+  physical-key navigation is registered — consistent with `page/linkinfo.js`'s choice for
+  free-scroll explainer screens.
+- **Content**: a local `SLIDES` array of 3 `{ titleKey, textKey }` pairs — reusing the same
+  i18n keys (`help_practice_slide1..3_title/text`) the old swiper-based `DAILY_PRACTICE`
+  deck used — rendered one after another top-to-bottom (title, body text, a thin divider
+  between slides), not as a horizontal swiper. `build()` fires `CTA.OPEN_DAILY_HELP` (§5.6)
+  every time this page is built — i.e. on every repeat showing, not just the first, since
+  this screen can now legitimately be seen more than once (see below).
+- **"Don't show this screen again" checkbox** (`practice_intro_dont_show_again`): not a
+  native checkbox widget — a `GROUP` containing an outer square `FILL_RECT` (fixed gray
+  border), an inner square `FILL_RECT` (`widgets.checkboxInner`, toggles between
+  `0x000000`/background-matching when unchecked and `0x1f8ed6`/accent when checked — the
+  same "swap a fill color on a smaller rect layered over a border rect" technique
+  `page/practice.js`'s focus contour uses) and a label `TEXT`, with one `CLICK_UP` listener
+  on the `GROUP` toggling `state.dontShowAgain` and the inner rect's color. Purely local
+  UI state — nothing is written to storage until the button below is pressed.
+- **`finishIntro()`** (bound to the trailing "Начать практику →" button,
+  i18n `help_practice_slide3_action`): if `state.dontShowAgain` is true, sets
+  `STORAGE_KEYS.PRACTICE_INTRO_SEEN = true` — **only then** does `page/index.js` stop
+  routing here. If the checkbox was left unchecked, the flag is never written, so the very
+  next tap on Practice shows this same screen again. Either way, `replace()`s to
+  `page/practice`, removing this screen from the stack.
+
 ### 4.2 `page/practice.js` — Daily practice idle screen
 - **Role**: entry point to the day's mandala; the "Open" button.
 - **On init**: `refreshState()` reads `AppStorage.getPracticeDays()` into
-  `state.progress = { streak, best, doneToday, isNextDay }`. `build()` also reads
-  `AppStorage.getCounter()` (total practice-screen views, incremented in `page/show.js` on
-  every successful `PRACTICE_SHOW` result — see §5.2.1) into `this.counterViewPractice`
-  *before* computing layout, so layout can decide whether "Go deeper" is shown.
+  `state.progress = { streak, best, doneToday, isNextDay }`.
 - **UI**: progress text `"{streak} · {best}"` (via i18n `streak`/`best` keys), status text
-  `done_today` / `not_yet_today`, and a random subtitle from `start_subtitle_0..3`.
-- **Navigation — up to three focusable elements**: the Open button (index 0), the Help icon
-  (index 1), and a "Go deeper" button (index 2) that only exists once
-  `this.counterViewPractice > IDLE_VIEWS_COUNTER` (currently `15`). `maxIndex` is
-  `this.widgets.deepBg ? 2 : 1`; `KEY_DOWN` decrements `selectedIndex` (wrapping to
-  `maxIndex`), `KEY_UP` increments it (wrapping to `0`), `KEY_SELECT` activates whichever
-  index is current. Touch (`CLICK_DOWN`/`MOVE`/`CLICK_UP`) on each widget sets
-  `state.selectedIndex` to that widget's own index and calls `syncFocus()`, so touch and
-  physical-key focus always agree (this fixed an earlier bug where a widget's own
-  `CLICK_DOWN` handler set its "selected" visual directly and then immediately called
-  `syncFocus()`, which recomputed from `selectedIndex` and undid it in the same tick).
-- **Focus styling — dark/light contour, not background swap**: the Open button and the Go
-  deeper button each draw an oversized `FILL_RECT` "border" behind their body
-  (`widgets.btnBorder` / `widgets.deepBorder`), colored `STROKE_COLOR_UNFOCUSED` (dark)
-  normally and `STROKE_COLOR_FOCUSED` (light) when focused — `setButtonSelected()` /
-  `setDeepSelected()` only toggle this border color (Go deeper additionally toggles its
-  `deepBg` fill between `MENU_NORMAL_COLOR`/`MENU_PRESSED_COLOR`; its icon (`icons/more.png`)
-  does not currently change between focus states — both branches of the ternary in
-  `setDeepSelected()` reference the same path). The Help icon is unchanged: bw ↔ colored
-  `question_64*.png` swap only, no border.
+  `done_today` / `not_yet_today`, and a fixed subtitle (`practice_subtitle`) — this used to
+  be one of four random `start_subtitle_0..3` strings; those keys are gone, replaced by this
+  single one.
+- **Navigation — two focusable elements**: the Open button (index 0) and a Help-styled icon
+  (index 1, bw ↔ colored `question_64*.png` swap on focus — same visual as before).
+  `KEY_DOWN`/`KEY_UP` toggle between them, `KEY_SELECT` activates whichever is current.
+  Touch (`CLICK_DOWN`/`MOVE`/`CLICK_UP`) on each widget sets `state.selectedIndex` to that
+  widget's own index and calls `syncFocus()`, so touch and physical-key focus always agree.
+- **The Help-styled icon always opens `DEEP_PRACTICE`, unconditionally** — tapping/selecting
+  it calls `openDeep()` (fires `CTA.OPEN_DEEPER`, §5.6; pushes `page/help` with
+  `DEEP_PRACTICE`'s 5 slides — "One Date" / "One Mandala" / "One Owner" / "Make it you",
+  the strongest scarcity/urgency copy in the app; slide 5's action carries
+  `url: WEBSITE_URL, full: true, ref: "deep_practice"`). There used to be a separate
+  view-count-gated "Go deeper" button (a third focusable element, shown only after
+  `AppStorage.getCounter() > IDLE_VIEWS_COUNTER` opens) distinct from a Help icon that
+  opened a 3-slide `DAILY_PRACTICE` orientation deck on this same page. All three of those —
+  the gating counter, the on-page `DAILY_PRACTICE` deck, and the swiper-based help screen
+  that rendered it — are gone from here: the counter mechanism
+  (`AppStorage.addCounter()`/`getCounter()`, `STORAGE_KEYS.VIEW_COUNTER`) has been deleted
+  entirely (nothing reads it, so nothing writes it either — the `page/show.js` write-site
+  was removed too), and the orientation content now lives on the dedicated
+  `page/practiceintro.js` (§4.1a), shown *before* a user ever reaches this page rather than
+  from a button on it. The net effect: the icon that always looked like Help now always
+  *behaves* like the old Go-deeper button, with no counter and no on-page fallback to the
+  old orientation content — see the evaluation notes on this trade-off (not recorded in
+  this spec; raised in conversation, not a code fact).
+- **Focus styling — dark/light contour**: the Open button draws an oversized `FILL_RECT`
+  "border" behind its body (`widgets.btnBorder`), colored `STROKE_COLOR_UNFOCUSED` (dark)
+  normally and `STROKE_COLOR_FOCUSED` (light) when focused — `setButtonSelected()` only
+  toggles this border color. The Help-styled icon has no border; it only swaps the bw/colored
+  icon image (`setHelpSelected()`).
 - **`scrollToSelected()`**: on every `KEY_UP`/`KEY_DOWN` press (not on touch — the finger is
   already on the target), scrolls the page (`@zos/page scrollTo`) so the newly-focused
   element is vertically centered on screen, using each element's known `y`/height from
@@ -171,14 +219,6 @@ should be treated as the project's *de facto* interaction contract:
 - **`handleOpenClick()`**: pushes to `page/show` with
   `{ day: AppStorage.getMandalaDayString(), title, fromLocalStorage, type: PRACTICE_SHOW }`,
   where `fromLocalStorage` is true iff the stored `MANDALA_DAY` already equals today.
-- **`openHelp()`**: fires `CTA.OPEN_DAILY_HELP` (§5.6), then pushes `page/help` with
-  `DAILY_PRACTICE` (3 slides; slide 3's action carries `url: WEBSITE_URL, ref: "help_practice"`).
-- **`openDeep()`** (Go deeper only): fires `CTA.OPEN_DEEPER` (§5.6), then pushes `page/help`
-  with `DEEP_PRACTICE` (5 slides — "One Date" / "One Mandala" / "One Owner" / "Make it
-  you", the strongest scarcity/urgency copy in the app; slide 5's action carries
-  `url: WEBSITE_URL, full: true, ref: "deep_practice"`).
-- `IDLE_VIEWS_COUNTER = 15` is a hardcoded, untested threshold — not tied to streak or any
-  A/B mechanism. Product follow-up, not a defect.
 
 ### 4.3 `page/show.js` — Generic mandala display
 - **Role**: shared screen for both the daily practice image and any collection item image.
@@ -312,13 +352,16 @@ should be treated as the project's *de facto* interaction contract:
 ### 4.8 `page/help.js` — Generic help slideshow
 - **Contract**: takes `params = JSON.stringify({ slides })` where each slide is
   `{ titleKey, textKey, action?: { labelKey, url, full?, ref? } }`. Used by `page/index`
-  (`SLIDES_MAIN`) and `page/practice` (`DAILY_PRACTICE`, `DEEP_PRACTICE`).
+  (`SLIDES_MAIN`) and `page/practice` (`DEEP_PRACTICE`). (`page/practiceintro.js`'s onboarding
+  content — §4.1a — used to be a `DAILY_PRACTICE` deck rendered through this file too, with
+  a one-off in-app-navigation action kind added just for its last slide; that whole deck and
+  the action kind it needed have both been removed from here — the onboarding is its own
+  dedicated page now, not a `page/help` slide deck.)
 - Horizontal swiper (`SCROLL_MODE_SWIPER_HORIZONTAL`); haptic feedback on page-scroll-done
   (soft buzz mid-deck, strong buzz on the last slide).
 - A slide with `action` renders a button that pushes `page/qr` with
   `{ url: action.url, full: action.full, ref: action.ref }` — `ref` is the
-  funnel-attribution tag for that entry point (§5.6); this file only forwards it, it
-  doesn't interpret it.
+  funnel-attribution tag for that entry point (§5.6).
 - **If `slides` is empty/missing, `build()` logs an error and renders nothing** — no
   fallback UI.
 
@@ -391,28 +434,39 @@ should be treated as the project's *de facto* interaction contract:
      `{ url: WEBSITE_URL, ref: "settings_mint" }`, same destination as the "mint & link"
      help-slide action elsewhere in the app, tagged with its own `ref` (§5.6) so this entry
      point is distinguishable in the site's logs.
-  3. **Unlink** (`unlinkWallet()`) — calls `WatchApi.unlink(page)` → companion method
-     `UNLINK` → backend `POST /device/unlink`. On `{status: "OK"}`: sets
-     `STORAGE_KEYS.LINKED = false`, clears `STORAGE_KEYS.COLLECTION_JSON`, and `replace()`s
-     to `page/nolink` (mirrors the link-established transition `page/nolink.js` already
-     does in reverse; unlike Refresh, this one *does* replace rather than signal-and-back,
-     since there is no "previous collection screen" state to resume into — the destination
-     is a different page entirely). On any other response or a network error: logged and
-     swallowed — the user stays on `page/settings` with no error UI, matching the app's
-     existing convention for background-ish requests (e.g. `page/nolink.js`'s
-     `checkLinkInBackground()`, `page/index.js`'s `loadNews()`). `state.busy` guards Unlink
-     against overlapping double-taps (Refresh is a synchronous flag-write + navigation, no
-     network call happens on this page, so it needs no such guard; Mint needs none either).
-  **No separate confirmation step** is shown before Unlink fires — the tap on the button
-  *is* the confirmation. Deliberate simplicity choice (no existing confirm/cancel pattern
-  is reused here); revisit if accidental unlinks turn out to be a problem in practice.
-- **Button styling**: all three buttons render with the same `NORMAL_COLOR`/`PRESSED_COLOR`
-  (shared gray, imported from `constants.js`), `UI.btnH = px(72)`, `UI.btnRadius = px(36)`
-  (a full pill at that height). **The `actions` array in `renderActions()` still carries a
-  distinct `normalColor`/`pressColor` per action** (gray/blue/red, the original
-  color-coded design) **but `buildActionSection()` no longer reads them** — it's hardcoded
-  to `NORMAL_COLOR`/`PRESSED_COLOR` with the per-action values commented out at the call
-  site. The three properties are dead data now; see §6.
+  3. **Unlink** — tapping the normal button no longer unlinks directly. It calls
+     `armUnlinkConfirm()`, which hides `widgets.unlinkButton` and reveals two
+     pre-built-but-hidden buttons occupying the same reserved space right below it:
+     `widgets.unlinkConfirmButton` (i18n `settings_action_unlink_confirm`, red) and
+     `widgets.unlinkCancelButton` (i18n `cancel`, shared gray). Both are built unconditionally
+     in `buildActionSection()` (just invisible by default) specifically so arming/cancelling
+     is a pure visibility toggle — no widget creation/deletion, no layout recompute, and
+     since Unlink is the last section nothing below it ever needs to shift. **Cancel**
+     (`cancelUnlinkConfirm()`) hides both and restores the normal button. **Confirm**
+     (`confirmUnlink()`) hides both and calls `unlinkWallet()`, which is otherwise unchanged:
+     calls `WatchApi.unlink(page)` → companion method `UNLINK` → backend
+     `POST /device/unlink`. On `{status: "OK"}`: sets `STORAGE_KEYS.LINKED = false`, clears
+     `STORAGE_KEYS.COLLECTION_JSON`, and `replace()`s to `page/nolink` (mirrors the
+     link-established transition `page/nolink.js` already does in reverse; unlike Refresh,
+     this one *does* replace rather than signal-and-back, since there is no "previous
+     collection screen" state to resume into — the destination is a different page
+     entirely). On any other response or a network error: logged, and the normal Unlink
+     button is made visible again so the user has something to retap — without this, the
+     confirm/cancel pair stays hidden after a failed attempt and the section would show
+     nothing actionable at all. `state.busy` guards Unlink against overlapping double-taps
+     (Refresh is a synchronous flag-write + navigation, no network call happens on this
+     page, so it needs no such guard; Mint needs none either).
+- **Button styling**: the three *normal* buttons (Refresh/Mint/Unlink) render with the same
+  `NORMAL_COLOR`/`PRESSED_COLOR` (shared gray, imported from `constants.js`),
+  `UI.btnH = SECONDARY_BUTTON_HEIGHT`, `UI.btnRadius = btnH / 2` (a full pill). **The
+  `actions` array in `renderActions()` still carries a distinct `normalColor`/`pressColor`
+  per action** (gray/blue/red, the original color-coded design) **but `buildActionSection()`
+  still doesn't read them for the normal-button rendering** — hardcoded to
+  `NORMAL_COLOR`/`PRESSED_COLOR` there, per-action values still commented out at that call
+  site. They're no longer *entirely* dead, though: Unlink's `normalColor`/`pressColor`
+  (`0x8f2d2d`/`0x6e2222`, red) are read live by its hidden Confirm button (above) — the only
+  one of the three action entries whose color fields do anything. Refresh's and Mint's
+  `normalColor`/`pressColor` remain fully unused; see §6.
 
 ---
 
@@ -433,11 +487,15 @@ should be treated as the project's *de facto* interaction contract:
 - `WEBSITE_URL = "https://mandala.garageno9.site"`.
 - `CTA`: the funnel-attribution label enum — see §5.6 for the full list and firing sites.
 - `STORAGE_KEYS`: `INSTALL_ID, MANDALA_DAY, MANDALA_PATH, STREAK_DAYS, BEST_STREAK,
-  VIEW_COUNTER, COLLECTION_JSON, LINKED, LAST_NEWS, COLLECTION_REFRESH`. `VIEW_COUNTER`
-  backs `AppStorage.addCounter()`/`getCounter()` — incremented once per successful
-  `PRACTICE_SHOW` render in `page/show.js`, read by `page/practice.js` to gate the "Go
-  deeper" button (§4.2). `COLLECTION_REFRESH` is the odd one out: it's not really "data"
-  like the others, it's a one-shot cross-page signal (see
+  COLLECTION_JSON, LINKED, LAST_NEWS, COLLECTION_REFRESH, PRACTICE_INTRO_SEEN`.
+  `PRACTICE_INTRO_SEEN` gates `page/practiceintro.js` (§4.1a) — checked in `page/index.js`
+  (§4.1), but only *written* on `page/practiceintro.js`'s own "Начать практику" button, and
+  only if its "don't show again" checkbox was ticked; never cleared once set. (A
+  `VIEW_COUNTER` key used
+  to back a view-count gate for a since-removed "Go deeper" button on `page/practice.js`;
+  the whole mechanism — `AppStorage.addCounter()`/`getCounter()`, the write-site in
+  `page/show.js`, the key itself — has been deleted, see §4.2.) `COLLECTION_REFRESH` is the
+  odd one out: it's not really "data" like the others, it's a one-shot cross-page signal (see
   §4.4/§4.10) — written `true` by `page/settings.js`, read-and-cleared at the top of
   `page/collection.js`'s `build()` (`consumeRefreshRequest()`). It happens to use the same
   persistent-storage mechanism as everything else here only because that's the one
@@ -544,14 +602,13 @@ not the older ones.
 Two independent, additive mechanisms track how users move toward the website/mint funnel;
 neither depends on the other.
 
-- **`ref` query param (`page/qr.js`)**: every help-slide `action` object
-  (`page/index.js SLIDES_MAIN`; `page/practice.js DAILY_PRACTICE`/`DEEP_PRACTICE`) and
-  `page/settings.js`'s `openMint()` carries a `ref` string alongside `url`. `page/help.js`
-  forwards it unchanged into `page/qr.js`'s params; `qr.js` appends it to the URL encoded in
-  the QR (`withRef()` — §4.9). Current values: `help_main`, `help_practice`,
-  `deep_practice`, `settings_mint`. This lets the *website* attribute a scan to the specific
-  in-app entry point that produced it, purely via its own access logs — nothing is sent back
-  to the watch/companion for this.
+- **`ref` query param (`page/qr.js`)**: every help-slide action in `page/index.js SLIDES_MAIN`
+  and `page/practice.js DEEP_PRACTICE` (§4.8), plus `page/settings.js`'s
+  `openMint()`, carries a `ref` string alongside `url`. `page/help.js` forwards it unchanged
+  into `page/qr.js`'s params; `qr.js` appends it to the URL encoded in the QR (`withRef()` —
+  §4.9). Current values: `help_main`, `deep_practice`, `settings_mint`. This lets the
+  *website* attribute a scan to the specific in-app entry point that produced it, purely via
+  its own access logs — nothing is sent back to the watch/companion for this.
 - **`CTA_EVENT` companion method** (`utils/watch-api.js WatchApi.sendCtaEvent(page, cta)` →
   `app-side/index.js sendCtaEvent()` → `GET {WEBSITE_URL}/api/watch//event/{cta}`, same
   three headers as every other companion→backend call — `User-Agent`, `X-App-Version`,
@@ -566,8 +623,8 @@ neither depends on the other.
   | Label | Fires in | Trigger |
   |---|---|---|
   | `OPEN_MAIN_HELP` | `page/index.js` `executeAction()` | Help icon activated on the main menu |
-  | `OPEN_DAILY_HELP` | `page/practice.js` `openHelp()` | Help icon activated on Practice |
-  | `OPEN_DEEPER` | `page/practice.js` `openDeep()` | "Go deeper" activated |
+  | `OPEN_DAILY_HELP` | `page/practiceintro.js` `build()` | the onboarding screen shown (§4.1a) — fires on every repeat showing, not just the first |
+  | `OPEN_DEEPER` | `page/practice.js` `openDeep()` | the Help-styled icon on Practice activated — unconditional now, no view-count gate (§4.2) |
   | `OPEN_COLLECTION_HELP` | `page/nolink.js` `openDetails()` | "Details" tapped on the no-link gate |
   | `OPEN_LINK_QR` | `page/nolink.js` `openLinkQr()` | "Link" tapped on the no-link gate |
   | `OPEN_COLLECTION_QR` | `page/linkinfo.js` CTA button | "Details on website" tapped |
@@ -604,9 +661,8 @@ them deliberately (in the spec first) rather than by accident.
    (`page/index.js`, `page/collection.js`, `page/nolink.js` each define their own
    `updateSelection`/`attachSelectable`/key-nav wiring instead of sharing one component).
    Functionally consistent today; a shared helper would reduce future drift. (`page/practice.js`'s
-   up-to-three-way focus cycling — §4.2 — is a related but distinct interaction model: a
-   single cycling index with contour-color focus, not a list of rows; not folded into this
-   item.)
+   two-way focus toggle — §4.2 — is a related but distinct interaction model: a single
+   toggled index with contour-color focus, not a list of rows; not folded into this item.)
 2. **Four separate, unused TGA-thumbnail resizer implementations** exist in `utils/`
    (`TgaThumbnail.js`, `IndexedTgaThumbnail.js`, `ImageResizer.js`, `HardcoreResizer.js`),
    none imported anywhere. They read as successive iterations on the same idea (byte-level
@@ -651,13 +707,17 @@ them deliberately (in the spec first) rather than by accident.
       instance via `replace()`, as `page/collection.js` now does, or (b) a background poll
       while the *current* page is different (as `page/nolink.js`'s `checkLinkInBackground`
       does, correctly, from `build()`).**
-7. **`page/settings.js`'s per-action button colors are dead data.** `renderActions()`
-    still builds an `actions` array with a distinct `normalColor`/`pressColor` per entry
-    (gray for Refresh, blue for Mint, red for Unlink — the original color-coded design),
-    but `buildActionSection()` no longer reads `action.normalColor`/`action.pressColor` —
-    it's hardcoded to the shared `NORMAL_COLOR`/`PRESSED_COLOR` from `constants.js`, with
-    the per-action reads commented out at the call site (`normal_color: NORMAL_COLOR,
-    //action.normalColor`). All three buttons render identically today. See §4.10.
+7. **`page/settings.js`'s per-action button colors are mostly dead data.**
+    `renderActions()` still builds an `actions` array with a distinct
+    `normalColor`/`pressColor` per entry (gray for Refresh, blue for Mint, red for Unlink —
+    the original color-coded design), but `buildActionSection()` still doesn't read
+    `action.normalColor`/`action.pressColor` for the three *normal* buttons — hardcoded to
+    the shared `NORMAL_COLOR`/`PRESSED_COLOR` from `constants.js` there, with the per-action
+    reads commented out at that call site (`normal_color: NORMAL_COLOR,
+    //action.normalColor`). Refresh and Mint render identically to each other and always
+    have. Unlink is the one exception now: its `normalColor`/`pressColor` are read live by
+    its hidden Confirm button (§4.10) — not dead for that entry, just never used for the
+    *normal*-state Unlink button itself. See §4.10.
 
 ---
 

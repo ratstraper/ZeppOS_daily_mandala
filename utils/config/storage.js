@@ -91,13 +91,4 @@ export default class AppStorage {
     storage.setItem(STORAGE_KEYS.STREAK_DAYS, streak);
     storage.setItem(STORAGE_KEYS.BEST_STREAK, best);
   }
-
-  static addCounter() {
-    let counter = storage.getItem(STORAGE_KEYS.VIEW_COUNTER) || 0;
-    storage.setItem(STORAGE_KEYS.VIEW_COUNTER, counter + 1);
-  }
-
-  static getCounter() {
-    return storage.getItem(STORAGE_KEYS.VIEW_COUNTER) || 0;
-  }
 }

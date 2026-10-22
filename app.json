@@ -40,6 +40,7 @@
             "page/help",
             "page/qr",
             "page/practice",
+            "page/practiceintro",
             "page/show",
             "page/settings"
           ]

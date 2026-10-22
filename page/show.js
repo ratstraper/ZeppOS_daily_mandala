@@ -160,9 +160,6 @@ Page(
           this.setVisible(this.widgets.mandalaImg, true);
           this.setVisible(this.widgets.errorText, false);
           if (payload.filePath) {
-            if (this.state.type === PRACTICE_SHOW) {
-              AppStorage.addCounter();
-            }
             this.widgets.mandalaImg.setProperty(hmUI.prop.SRC, payload.filePath);
           }
           this.keepScreenAwake(true);

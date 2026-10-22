@@ -8,37 +8,11 @@ import { push } from '@zos/router';
 import { scrollTo } from '@zos/page';
 import AppStorage from "../utils/config/storage.js";
 import { WatchApi } from "../utils/watch-api";
-import { PRACTICE_NORMAL_COLOR, PRACTICE_PRESSED_COLOR, TITLE, SECONDARY_BUTTON_HEIGHT } from "zosLoader:./index.[pf].layout.js";
-import {
-  WEBSITE_URL, PRACTICE_SHOW, STORAGE_KEYS, CTA,
-  NORMAL_COLOR as MENU_NORMAL_COLOR, PRESSED_COLOR as MENU_PRESSED_COLOR,
-} from "../utils/config/constants.js";
+import { PRACTICE_NORMAL_COLOR, PRACTICE_PRESSED_COLOR, TITLE } from "zosLoader:./index.[pf].layout.js";
+import { WEBSITE_URL, PRACTICE_SHOW, STORAGE_KEYS, CTA } from "../utils/config/constants.js";
 
 const logger = Logger.getLogger("practice_screen");
 const { width, height } = getDeviceInfo();
-
-const DAILY_PRACTICE = [
-  {
-    titleKey: "help_practice_slide1_title",
-    textKey: "help_practice_slide1_text",
-    label: "label_next",
-  },
-  {
-    titleKey: "help_practice_slide2_title",
-    textKey: "help_practice_slide2_text",
-    label: "label_next",
-  },
-  {
-    titleKey: "help_practice_slide3_title",
-    textKey: "help_practice_slide3_text",
-    action: {
-      labelKey: "help_practice_slide3_action",
-      url: WEBSITE_URL,
-      full: false,
-      ref: "help_practice",
-    },
-  }
-];
 
 const DEEP_PRACTICE = [
   {
@@ -73,7 +47,6 @@ const DEEP_PRACTICE = [
   },
 ];
 
-const IDLE_VIEWS_COUNTER = 15;
 const STROKE_COLOR_FOCUSED = 0x5CBAFF;
 const STROKE_COLOR_UNFOCUSED = 0x1F3A52;
 
@@ -97,9 +70,6 @@ Page(
       progressText: null,
       statusText: null,
       helpImg: null,
-      deepBg: null,
-      deepBorder: null,
-      deepIcon: null,
     },
 
     onInit() {
@@ -108,7 +78,6 @@ Page(
 
     build() {
       logger.log(`PRACTICE.JS`);
-      this.counterViewPractice = AppStorage.getCounter();
       this.layout = this.createLayout();
       this.buildTitle();
       this.buildIdleGroup();
@@ -134,12 +103,8 @@ Page(
       const helpHeight = px(104);
       const progressY = btnY + btnHeight + px(26);
       const statusY = progressY + px(42);
-      const counterY = statusY + px(32);
-      const showDeep = this.counterViewPractice > IDLE_VIEWS_COUNTER;
-      const deepHeight = SECONDARY_BUTTON_HEIGHT;
-      const deepY = statusY + px(54);
-      const helpY = showDeep ? deepY + deepHeight + px(32) : statusY + px(54);
-      return { btnY, btnHeight, progressY, statusY, counterY, deepY, deepHeight, helpY, helpHeight, showDeep };
+      const helpY = statusY + px(54);
+      return { btnY, btnHeight, progressY, statusY, helpY, helpHeight };
     },
 
     buildTitle() {
@@ -175,11 +140,9 @@ Page(
         color: 0xffffff, text_size: px(48), align_v: hmUI.align.CENTER_V, text: i18n("open")
       });
 
-      const rnd = Math.floor(Math.random() * 4);
-      const subtitle = i18n(`start_subtitle_${rnd}`);
       this.widgets.idleGroup.createWidget(hmUI.widget.TEXT, {
         x: btnX + px(140), y: btnY + px(85), w: btnWidth - px(160), h: px(40),
-        color: 0xffffff, text_size: px(30), align_v: hmUI.align.CENTER_V, text: subtitle
+        color: 0xffffff, text_size: px(30), align_v: hmUI.align.CENTER_V, text: i18n("practice_subtitle")
       });
 
       const clickArea = this.widgets.idleGroup.createWidget(hmUI.widget.IMG, {
@@ -208,45 +171,9 @@ Page(
         text_size: px(24), align_h: hmUI.align.CENTER_H, text: "",
       });
 
-      if (this.layout.showDeep) {
-        const deepHeight = this.layout.deepHeight, deepRadius = deepHeight / 2;
-
-        this.widgets.deepBorder = this.widgets.idleGroup.createWidget(hmUI.widget.FILL_RECT, {
-          x: btnX - px(4), y: this.layout.deepY - px(4), w: btnWidth + px(8), h: deepHeight + px(8),
-          color: STROKE_COLOR_UNFOCUSED, radius: deepRadius + px(4)
-        });
-
-        this.widgets.deepBg = this.widgets.idleGroup.createWidget(hmUI.widget.FILL_RECT, {
-          x: btnX, y: this.layout.deepY, w: btnWidth, h: deepHeight,
-          color: MENU_NORMAL_COLOR, radius: deepRadius
-        });
-
-        this.widgets.deepIcon = this.widgets.idleGroup.createWidget(hmUI.widget.IMG, {
-          x: btnX + px(24), y: this.layout.deepY + (deepHeight - px(60)) / 2,
-          w: px(60), h: px(60), src: "icons/more.png"
-        });
-
-        this.widgets.idleGroup.createWidget(hmUI.widget.TEXT, {
-          x: btnX + px(104), y: this.layout.deepY, w: btnWidth - px(124), h: deepHeight,
-          color: 0xffffff, text_size: px(36), align_h: hmUI.align.LEFT, align_v: hmUI.align.CENTER_V,
-          text: i18n("deep_button")
-        });
-
-        const deepClickArea = this.widgets.idleGroup.createWidget(hmUI.widget.IMG, {
-          x: btnX, y: this.layout.deepY, w: btnWidth, h: deepHeight, src: ''
-        });
-
-        deepClickArea.addEventListener(hmUI.event.CLICK_DOWN, () => {
-          this.state.selectedIndex = 2; this.syncFocus();
-        });
-        deepClickArea.addEventListener(hmUI.event.MOVE, () => {
-          this.state.selectedIndex = -1; this.syncFocus();
-        });
-        deepClickArea.addEventListener(hmUI.event.CLICK_UP, () => {
-          this.state.selectedIndex = -1; this.syncFocus(); this.openDeep();
-        });
-      }
-
+      // Кнопка всегда отображается как Help (иконка question_64*), но по
+      // смыслу теперь ведёт в DEEP_PRACTICE — счётчик открытий для этого
+      // больше не нужен, кнопка Go deeper как отдельный виджет удалена.
       this.widgets.helpImg = this.widgets.idleGroup.createWidget(hmUI.widget.IMG, {
         x: (width - px(64)) / 2, y: this.layout.helpY, w: px(64), h: px(104), src: "icons/question_64bw.png",
       });
@@ -258,19 +185,12 @@ Page(
         this.state.selectedIndex = -1; this.syncFocus();
       });
       this.widgets.helpImg.addEventListener(hmUI.event.CLICK_UP, () => {
-        this.state.selectedIndex = -1; this.syncFocus(); this.openHelp();
+        this.state.selectedIndex = -1; this.syncFocus(); this.openDeep();
       });
     },
 
     setHelpSelected(selected) {
       this.widgets.helpImg.setProperty(hmUI.prop.SRC, selected ? "icons/question_64.png" : "icons/question_64bw.png");
-    },
-
-    setDeepSelected(selected) {
-      if (!this.widgets.deepBg) return;
-      this.widgets.deepBorder.setProperty(hmUI.prop.COLOR, selected ? STROKE_COLOR_FOCUSED : STROKE_COLOR_UNFOCUSED);
-      this.widgets.deepBg.setProperty(hmUI.prop.COLOR, selected ? MENU_PRESSED_COLOR : MENU_NORMAL_COLOR);
-      this.widgets.deepIcon.setProperty(hmUI.prop.SRC, selected ? "icons/more.png" : "icons/more.png");
     },
 
     setButtonSelected(selected) {
@@ -305,15 +225,6 @@ Page(
       });
     },
 
-    openHelp() {
-      logger.log("Open practice help");
-      WatchApi.sendCtaEvent(this, CTA.OPEN_DAILY_HELP).catch(() => {});
-      push({
-        url: "page/help",
-        params: JSON.stringify({ slides: DAILY_PRACTICE }),
-      });
-    },
-
     openDeep() {
       logger.log("Open deep practice help");
       WatchApi.sendCtaEvent(this, CTA.OPEN_DEEPER).catch(() => {});
@@ -328,23 +239,19 @@ Page(
         callback: (key, keyEvent) => {
           if (keyEvent !== KEY_EVENT_CLICK) return false;
           if (key === KEY_DOWN) {
-            const maxIndex = this.widgets.deepBg ? 2 : 1;
-            this.state.selectedIndex = this.state.selectedIndex <= 0 ? maxIndex : this.state.selectedIndex - 1;
+            this.state.selectedIndex = this.state.selectedIndex <= 0 ? 1 : this.state.selectedIndex - 1;
             this.syncFocus();
             this.scrollToSelected();
             return true;
           }
           if (key === KEY_UP) {
-            const maxIndex = this.widgets.deepBg ? 2 : 1;
-            this.state.selectedIndex = this.state.selectedIndex >= maxIndex ? 0 : this.state.selectedIndex + 1;
+            this.state.selectedIndex = this.state.selectedIndex >= 1 ? 0 : this.state.selectedIndex + 1;
             this.syncFocus();
             this.scrollToSelected();
             return true;
           }
           if (key === KEY_SELECT) {
             if (this.state.selectedIndex === 1) {
-              this.openHelp();
-            } else if (this.state.selectedIndex === 2) {
               this.openDeep();
             } else {
               this.handleOpenClick();
@@ -360,17 +267,14 @@ Page(
     syncFocus() {
       this.setButtonSelected(this.state.selectedIndex === 0);
       this.setHelpSelected(this.state.selectedIndex === 1);
-      this.setDeepSelected(this.state.selectedIndex === 2);
     },
 
     scrollToSelected() {
       let itemY, itemH;
       if (this.state.selectedIndex === 0) {
         itemY = this.layout.btnY; itemH = this.layout.btnHeight;
-      } else if (this.state.selectedIndex === 1) {
-        itemY = this.layout.helpY; itemH = this.layout.helpHeight;
       } else {
-        itemY = this.layout.deepY; itemH = this.layout.deepHeight;
+        itemY = this.layout.helpY; itemH = this.layout.helpHeight;
       }
 
       let targetY = itemY + itemH / 2 - height / 2;

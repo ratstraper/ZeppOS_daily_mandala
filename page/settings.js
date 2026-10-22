@@ -56,6 +56,9 @@ Page(
     },
     widgets: {
       title: null,
+      unlinkButton: null,
+      unlinkConfirmButton: null,
+      unlinkCancelButton: null,
     },
 
     build() {
@@ -121,7 +124,8 @@ Page(
           labelKey: "settings_action_unlink_title",
           normalColor: 0x8f2d2d,
           pressColor: 0x6e2222,
-          onActivate: () => this.unlinkWallet(),
+          onActivate: () => this.armUnlinkConfirm(),
+          confirm: true,
         },
       ];
 
@@ -151,9 +155,10 @@ Page(
       });
       y += descLayout.height + UI.gapDescToBtn;
 
-      hmUI.createWidget(hmUI.widget.BUTTON, {
+      const buttonY = y;
+      const button = hmUI.createWidget(hmUI.widget.BUTTON, {
         x: UI.padX,
-        y,
+        y: buttonY,
         w: contentW,
         h: UI.btnH,
         radius: UI.btnRadius,
@@ -168,9 +173,76 @@ Page(
         },
       });
       y += UI.btnH;
+
+      // Подтверждение перед Unlink: вместо обычной кнопки сразу вызывающей
+      // действие, тут заранее строим скрытую пару Confirm/Cancel на тех же
+      // местах — показываем их по первому тапу, прячем обратно саму кнопку.
+      // Ничего рядом не рендерится позже (это последняя секция), так что
+      // зарезервированное под них место никого не сдвигает.
+      if (action.confirm) {
+        this.widgets.unlinkButton = button;
+
+        this.widgets.unlinkConfirmButton = hmUI.createWidget(hmUI.widget.BUTTON, {
+          x: UI.padX,
+          y: buttonY,
+          w: contentW,
+          h: UI.btnH,
+          radius: UI.btnRadius,
+          normal_color: action.normalColor,
+          press_color: action.pressColor,
+          text: i18n("settings_action_unlink_confirm"),
+          text_size: UI.btnTextSize,
+          color: 0xffffff,
+          click_func: () => {
+            hapticSoft();
+            this.confirmUnlink();
+          },
+        });
+        this.widgets.unlinkConfirmButton.setProperty(hmUI.prop.VISIBLE, false);
+
+        const cancelY = y + UI.gapDescToBtn;
+        this.widgets.unlinkCancelButton = hmUI.createWidget(hmUI.widget.BUTTON, {
+          x: UI.padX,
+          y: cancelY,
+          w: contentW,
+          h: UI.btnH,
+          radius: UI.btnRadius,
+          normal_color: NORMAL_COLOR,
+          press_color: PRESSED_COLOR,
+          text: i18n("cancel"),
+          text_size: UI.btnTextSize,
+          color: 0xffffff,
+          click_func: () => {
+            hapticSoft();
+            this.cancelUnlinkConfirm();
+          },
+        });
+        this.widgets.unlinkCancelButton.setProperty(hmUI.prop.VISIBLE, false);
+
+        y = cancelY + UI.btnH;
+      }
+
       y += isLast ? UI.bottomPad : UI.gapBetweenSections;
 
       return y;
+    },
+
+    armUnlinkConfirm() {
+      this.widgets.unlinkButton.setProperty(hmUI.prop.VISIBLE, false);
+      this.widgets.unlinkConfirmButton.setProperty(hmUI.prop.VISIBLE, true);
+      this.widgets.unlinkCancelButton.setProperty(hmUI.prop.VISIBLE, true);
+    },
+
+    cancelUnlinkConfirm() {
+      this.widgets.unlinkConfirmButton.setProperty(hmUI.prop.VISIBLE, false);
+      this.widgets.unlinkCancelButton.setProperty(hmUI.prop.VISIBLE, false);
+      this.widgets.unlinkButton.setProperty(hmUI.prop.VISIBLE, true);
+    },
+
+    confirmUnlink() {
+      this.widgets.unlinkConfirmButton.setProperty(hmUI.prop.VISIBLE, false);
+      this.widgets.unlinkCancelButton.setProperty(hmUI.prop.VISIBLE, false);
+      this.unlinkWallet();
     },
 
     // Сеть здесь не трогаем: у ZeppOS Page нет onResume/onPause (см. спеку §6) —
@@ -208,11 +280,13 @@ Page(
             replace({ url: "page/nolink" });
           } else {
             logger.log("Unlink error from phone:", data && data.status);
+            this.widgets.unlinkButton.setProperty(hmUI.prop.VISIBLE, true);
           }
         })
         .catch((err) => {
           this.state.busy = false;
           logger.log("Network/BLE error:", err);
+          this.widgets.unlinkButton.setProperty(hmUI.prop.VISIBLE, true);
         });
     },
 

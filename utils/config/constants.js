@@ -11,11 +11,11 @@ export const STORAGE_KEYS = {
   MANDALA_PATH: 'mandalaPath',
   STREAK_DAYS: 'streakDays',
   BEST_STREAK: 'bestStreak',
-  VIEW_COUNTER: 'viewCounter',
   COLLECTION_JSON: 'collectionJson',
   LINKED: 'linked',
   LAST_NEWS: 'lastNews',
   COLLECTION_REFRESH: 'collectionRefreshRequested',
+  PRACTICE_INTRO_SEEN: 'practiceIntroSeen',
 };
 
 export const PRACTICE_SHOW = 1;

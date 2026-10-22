@@ -15,17 +15,8 @@ msgstr "Collection"
 
 // practice page
 
-msgid "start_subtitle_1"
-msgstr "with simple presence"
-
-msgid "start_subtitle_2"
-msgstr "with just 3 minutes"
-
-msgid "start_subtitle_3"
-msgstr "by tuning out the noise"
-
-msgid "start_subtitle_0"
-msgstr "with a soft reset"
+msgid "practice_subtitle"
+msgstr "A daily mandala for meditation"
 
 msgid "loading_mandala"
 msgstr "Determining the day's energy"
@@ -109,7 +100,10 @@ msgid "help_practice_slide3_text"
 msgstr "Streak - your current series\nof daily sessions.\n\nBest - your personal record\nof streak."
 
 msgid "help_practice_slide3_action"
-msgstr "Visit website →"
+msgstr "Start practicing →"
+
+msgid "practice_intro_dont_show_again"
+msgstr "Don't show this screen again"
 
 //deep practice help
 msgid "deep_button"
@@ -244,6 +238,9 @@ msgstr "Unlink wallet"
 
 msgid "settings_action_unlink_desc"
 msgstr "Remove the link between this watch and your wallet"
+
+msgid "settings_action_unlink_confirm"
+msgstr "Yes, unlink"
 
 // link
 msgid "linked"

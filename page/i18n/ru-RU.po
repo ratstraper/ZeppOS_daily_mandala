@@ -13,17 +13,8 @@ msgstr "Открыть"
 msgid "collection"
 msgstr "Коллекция"
 
-msgid "start_subtitle_0"
-msgstr "небольшой перезапуск"
-
-msgid "start_subtitle_1"
-msgstr "простое присутствие"
-
-msgid "start_subtitle_2"
-msgstr "всего лишь 3 минуты"
-
-msgid "start_subtitle_3"
-msgstr "чтобы приглушить шум"
+msgid "practice_subtitle"
+msgstr "Ежедневная мандала для медитации"
 
 msgid "loading_mandala"
 msgstr "Определяем энергии дня"
@@ -106,7 +97,10 @@ msgid "help_practice_slide3_text"
 msgstr "Streak - your current series\nof daily sessions.\n\nBest - your personal record\nof streak."
 
 msgid "help_practice_slide3_action"
-msgstr "Visit website →"
+msgstr "Начать практику →"
+
+msgid "practice_intro_dont_show_again"
+msgstr "Больше не показывать этот экран"
 
 //deep practice help
 msgid "deep_button"
@@ -241,6 +235,9 @@ msgstr "Отвязать кошелёк"
 
 msgid "settings_action_unlink_desc"
 msgstr "Разорвать связь этих часов с кошельком коллекции"
+
+msgid "settings_action_unlink_confirm"
+msgstr "Да, отвязать"
 
 // link
 msgid "linked"

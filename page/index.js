@@ -247,6 +247,11 @@ Page(
         WatchApi.sendCtaEvent(this, CTA.OPEN_MAIN_HELP).catch(() => {});
       }
 
+      if (item.id === 'practice' && !AppStorage.getRecord(STORAGE_KEYS.PRACTICE_INTRO_SEEN)) {
+        push({ url: 'page/practiceintro' });
+        return;
+      }
+
       if (item.id === 'collection' && !AppStorage.getRecord(STORAGE_KEYS.LINKED)) {
         push({ url: 'page/nolink' });
       } else {
