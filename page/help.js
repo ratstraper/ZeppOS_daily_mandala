@@ -201,7 +201,8 @@ Page(
               url: "page/qr",
               params: JSON.stringify({
                 url: slide.action.url,
-                full: slide.action.full
+                full: slide.action.full,
+                ref: slide.action.ref,
               }),
             });
           },

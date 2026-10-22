@@ -7,9 +7,10 @@ import { getDeviceInfo } from "@zos/device";
 import { push } from '@zos/router';
 import { scrollTo } from '@zos/page';
 import AppStorage from "../utils/config/storage.js";
+import { WatchApi } from "../utils/watch-api";
 import { PRACTICE_NORMAL_COLOR, PRACTICE_PRESSED_COLOR, TITLE, SECONDARY_BUTTON_HEIGHT } from "zosLoader:./index.[pf].layout.js";
 import {
-  WEBSITE_URL, PRACTICE_SHOW, STORAGE_KEYS,
+  WEBSITE_URL, PRACTICE_SHOW, STORAGE_KEYS, CTA,
   NORMAL_COLOR as MENU_NORMAL_COLOR, PRESSED_COLOR as MENU_PRESSED_COLOR,
 } from "../utils/config/constants.js";
 
@@ -33,7 +34,8 @@ const DAILY_PRACTICE = [
     action: {
       labelKey: "help_practice_slide3_action",
       url: WEBSITE_URL,
-      full: false
+      full: false,
+      ref: "help_practice",
     },
   }
 ];
@@ -65,7 +67,8 @@ const DEEP_PRACTICE = [
     action: {
       labelKey: "deep_practice_slide5_action",
       url: WEBSITE_URL,
-      full: true
+      full: true,
+      ref: "deep_practice",
     },
   },
 ];
@@ -304,6 +307,7 @@ Page(
 
     openHelp() {
       logger.log("Open practice help");
+      WatchApi.sendCtaEvent(this, CTA.OPEN_DAILY_HELP).catch(() => {});
       push({
         url: "page/help",
         params: JSON.stringify({ slides: DAILY_PRACTICE }),
@@ -312,6 +316,7 @@ Page(
 
     openDeep() {
       logger.log("Open deep practice help");
+      WatchApi.sendCtaEvent(this, CTA.OPEN_DEEPER).catch(() => {});
       push({
         url: "page/help",
         params: JSON.stringify({ slides: DEEP_PRACTICE }),

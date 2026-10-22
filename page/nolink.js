@@ -6,7 +6,8 @@ import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@z
 import { BasePage } from "@zeppos/zml/base-page";
 import AppStorage from '../utils/config/storage.js';
 import Profile from "../utils/config/profile.js";
-import { NORMAL_COLOR, PRESSED_COLOR, STORAGE_KEYS } from "../utils/config/constants.js";
+import { WatchApi } from "../utils/watch-api";
+import { NORMAL_COLOR, PRESSED_COLOR, STORAGE_KEYS, CTA } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
 
 import { TITLE } from "zosLoader:./index.[pf].layout.js";
@@ -221,12 +222,14 @@ Page(
 
     openDetails() {
       logger.log("Open nolink help screen");
+      WatchApi.sendCtaEvent(this, CTA.OPEN_COLLECTION_HELP).catch(() => {});
       replace({ url: "page/linkinfo" });
     },
 
     openLinkQr() {
       const url = AppStorage.getLinkUrl();
       logger.log("Open link QR:", url);
+      WatchApi.sendCtaEvent(this, CTA.OPEN_LINK_QR).catch(() => {});
       replace({
         url: "page/link",
         params: JSON.stringify({ url }),
@@ -249,6 +252,7 @@ Page(
 
           if (status === "OK") {
             logger.log('Link confirmed by phone, switching to collection');
+            WatchApi.sendCtaEvent(this, CTA.LINKED).catch(() => {});
             AppStorage.setRecord(STORAGE_KEYS.LINKED, true);
             AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, JSON.stringify(collection));
             // Не дёргаем экран, если пользователь уже ушёл на QR/справку

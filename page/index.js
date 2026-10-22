@@ -7,9 +7,10 @@ import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@z
 import { scrollTo } from '@zos/page';
 import { push } from '@zos/router';
 import { DEVICE_WIDTH, DEVICE_HEIGHT } from '../utils/config/device'
-import { WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR, STORAGE_KEYS } from '../utils/config/constants';
+import { WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR, STORAGE_KEYS, CTA } from '../utils/config/constants';
 import Profile from "../utils/config/profile.js";
 import AppStorage from "../utils/config/storage";
+import { WatchApi } from "../utils/watch-api";
 
 import { FETCH_RESULT_TEXT, TITLE } from "zosLoader:./index.[pf].layout.js";
 
@@ -31,6 +32,7 @@ const SLIDES_MAIN = [
     action: {
       labelKey: "help_main_slide3_action",
       url: WEBSITE_URL,
+      ref: "help_main",
     },
   },
 ];
@@ -241,7 +243,10 @@ Page(
     executeAction(item) {
       logger.log(`Активирован пункт: ${item.title}`);
 
-      
+      if (item.id === 'help') {
+        WatchApi.sendCtaEvent(this, CTA.OPEN_MAIN_HELP).catch(() => {});
+      }
+
       if (item.id === 'collection' && !AppStorage.getRecord(STORAGE_KEYS.LINKED)) {
         push({ url: 'page/nolink' });
       } else {

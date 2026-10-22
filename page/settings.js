@@ -189,7 +189,7 @@ Page(
       logger.log("Settings: open mint QR");
       push({
         url: "page/qr",
-        params: JSON.stringify({ url: WEBSITE_URL }),
+        params: JSON.stringify({ url: WEBSITE_URL, ref: "settings_mint" }),
       });
     },
 

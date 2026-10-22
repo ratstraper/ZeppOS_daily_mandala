@@ -11,6 +11,8 @@ import { Vibrator } from "@zos/sensor";
 import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
 import AppStorage from "../utils/config/storage.js";
+import { WatchApi } from "../utils/watch-api";
+import { CTA } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
 
 const logger = Logger.getLogger("mandala_day");
@@ -124,6 +126,7 @@ Page(
         color: 0xffffff,
         click_func: () => {
           hapticStrong();
+          WatchApi.sendCtaEvent(this, CTA.OPEN_COLLECTION_QR).catch(() => {});
           const url = AppStorage.getLinkUrl();
           logger.log("open link QR from help:", url);
           push({

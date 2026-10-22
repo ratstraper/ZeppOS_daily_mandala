@@ -45,22 +45,14 @@ Communication device ⇄ companion is via `this.request({ method, request })` fr
 - Two device shapes: round (`st:"r"`, design width 480) and square (`st:"s"`, design width 390).
   Per-shape layout is implemented via ZeppOS's `zosLoader:./index.[pf].layout.js` mechanism:
   `page/index.r.layout.js` (round) and `page/index.s.layout.js` (square) both export the
-  same symbol names (`TITLE`, `FETCH_RESULT_TEXT`, …) consumed by pages via
-  `import { TITLE } from "zosLoader:./index.[pf].layout.js"`. **Only the round layout
-  currently defines `NORMAL_COLOR`/`PRESSED_COLOR`/`SELECTED_COLOR`/`MENU_BUTTON`** — the
-  square layout only defines `FETCH_RESULT_TEXT`. Pages that import the color constants
-  from the loader (`practice.js`) will fail to resolve them on square devices unless the
-  square layout is completed. **This is a real gap, not a documented feature split.**
-- **`page/index.r.layout.js` currently fails to parse — the whole round build is broken.**
-  It has `import { NORMAL_COLOR, PRESSED_COLOR, ERROR_COLOR } from "../utils/config/constants"`
-  at the top, and two lines later declares `export const NORMAL_COLOR = 0x0E8CE6` /
-  `export const PRESSED_COLOR = 0x0B72BD` — an imported binding and a local `const`
-  sharing the same name in the same module scope, which is a hard `SyntaxError: Identifier
-  'NORMAL_COLOR' has already been declared` (confirmed with `node --check`). None of the
-  three imported names (`NORMAL_COLOR`, `PRESSED_COLOR`, `ERROR_COLOR`) are actually
-  referenced anywhere in this file's body — the file already defines and exports its own
-  `NORMAL_COLOR`/`PRESSED_COLOR`/`SELECTED_COLOR` for consumers, so the import block adds
-  nothing even where it doesn't collide. See §6.
+  same symbol set — `TITLE`, `FETCH_RESULT_TEXT`, `MENU_BUTTON`, `SECONDARY_BUTTON_HEIGHT`,
+  and `PRACTICE_NORMAL_COLOR`/`PRACTICE_PRESSED_COLOR`/`PRACTICE_SELECTED_COLOR` — consumed
+  by pages via `import { ... } from "zosLoader:./index.[pf].layout.js"`. Both files parse
+  cleanly (`node --check` on each) and are kept in sync; `page/practice.js` is the one
+  consumer of the `PRACTICE_*` colors and imports them under those names on both platforms.
+  (Previously the two layout files disagreed — round exported plain `NORMAL_COLOR`/
+  `PRESSED_COLOR`/`SELECTED_COLOR` and had a duplicate-declaration `SyntaxError`, square was
+  missing the colors entirely. Both are fixed: resolved.)
 - Permissions declared in `app.json`: `data:os.device.info`, `device:os.alarm`,
   `device:os.local_storage`, `device:os.network`, `device:os.notification`,
   `data:user.info`.
@@ -89,13 +81,13 @@ page/linkinfo.js              Static explainer for why/how to link a wallet
 page/help.js                  Generic horizontal-swiper help/onboarding slideshow
 page/qr.js                    Generic "scan this QR to open a URL" screen
 page/settings.js              Collection settings hub: refresh / mint / unlink actions
-page/index.r.layout.js        Round-screen layout constants/helpers — BROKEN, does not parse, see §6 item 0
-page/index.s.layout.js        Square-screen layout constants/helpers (incomplete, see §2.1)
-utils/config/constants.js     Colors, WEBSITE_URL, STORAGE_KEYS, screen-type enum
+page/index.r.layout.js        Round-screen layout constants/helpers
+page/index.s.layout.js        Square-screen layout constants/helpers (same export set as the round layout)
+utils/config/constants.js     Colors, WEBSITE_URL, STORAGE_KEYS, screen-type enum, CTA labels (see §5.6)
 utils/config/device.js        Device info, i18n language-code → locale map, date formatting
 utils/config/profile.js       Builds the common request payload sent to the companion
-utils/config/storage.js       AppStorage: LocalStorage wrapper + practice-streak rules
-utils/watch-api.js            WatchApi: thin request wrapper — link/* and unlink methods
+utils/config/storage.js       AppStorage: LocalStorage wrapper + practice-streak rules + view counter
+utils/watch-api.js            WatchApi: thin request wrapper — link/*, unlink, sendCtaEvent (see §5.6)
 utils/components/LoadingAnimationComponent.js   IMG_ANIM-based spinner widget
 utils/ScheduleNotification.js Schedules a delayed local notification via @zos/alarm
 utils/TextUtils.js            t(msgid, ...args): i18n string with {0},{1},… interpolation
@@ -126,29 +118,67 @@ should be treated as the project's *de facto* interaction contract:
 - **Role**: navigation hub, first screen.
 - **Menu items**: Practice → `page/practice`, Collection → `page/collection` (gated, see
   below), plus a persistent help icon → `page/help` with `SLIDES_MAIN` (3 slides, last one
-  has a "visit website" action → `page/qr`).
+  has a "visit website" action → `page/qr`, tagged `ref: "help_main"` — see §5.6).
 - **Rule — Collection gating**: `executeAction()` checks
   `AppStorage.getRecord(STORAGE_KEYS.LINKED)`. If falsy, tapping Collection routes to
   `page/nolink` instead of `page/collection`.
+- **CTA tracking**: `executeAction()` fires `CTA.OPEN_MAIN_HELP` (§5.6) whenever
+  `item.id === 'help'` — this one spot covers both touch and physical-`KEY_SELECT`
+  activation, since both paths call `executeAction()`.
 - **Side effect — `loadNews()`**: on `build()`, if
   `now - STORAGE_KEYS.LAST_NEWS > 10 days`, sends `GET_NEWS` to the companion. On a
-  successful response with `result === "Ok"` and non-empty `news`, concatenates all
-  `news[].body` into one string, and schedules a notification (title = first news item's
-  title, content = concatenated bodies) via `scheduleNotification()`, then stamps
-  `LAST_NEWS = now`. See §6 for a defect in `scheduleNotification`'s guard condition.
+  successful response with `result === "Ok"` and non-empty `news` (each item shaped
+  `{ date, title, body }`), concatenates all `news[].body` into one string, and schedules a
+  notification (title = first news item's title, content = concatenated bodies) via
+  `scheduleNotification()`, then stamps `LAST_NEWS = now`. `scheduleNotification()`'s guard
+  used to be inverted (it only scheduled when `item`/`title`/`content` were *missing*) —
+  fixed: it now schedules the alarm whenever they're present and early-returns `0`
+  otherwise.
 
 ### 4.2 `page/practice.js` — Daily practice idle screen
 - **Role**: entry point to the day's mandala; the "Open" button.
 - **On init**: `refreshState()` reads `AppStorage.getPracticeDays()` into
-  `state.progress = { streak, best, doneToday, isNextDay }`.
+  `state.progress = { streak, best, doneToday, isNextDay }`. `build()` also reads
+  `AppStorage.getCounter()` (total practice-screen views, incremented in `page/show.js` on
+  every successful `PRACTICE_SHOW` result — see §5.2.1) into `this.counterViewPractice`
+  *before* computing layout, so layout can decide whether "Go deeper" is shown.
 - **UI**: progress text `"{streak} · {best}"` (via i18n `streak`/`best` keys), status text
   `done_today` / `not_yet_today`, and a random subtitle from `start_subtitle_0..3`.
-- **Navigation**: two focusable elements — the Open button (index 0) and the help icon
-  (index 1); `KEY_UP`/`KEY_DOWN` toggle between them, `KEY_SELECT` activates.
+- **Navigation — up to three focusable elements**: the Open button (index 0), the Help icon
+  (index 1), and a "Go deeper" button (index 2) that only exists once
+  `this.counterViewPractice > IDLE_VIEWS_COUNTER` (currently `15`). `maxIndex` is
+  `this.widgets.deepBg ? 2 : 1`; `KEY_DOWN` decrements `selectedIndex` (wrapping to
+  `maxIndex`), `KEY_UP` increments it (wrapping to `0`), `KEY_SELECT` activates whichever
+  index is current. Touch (`CLICK_DOWN`/`MOVE`/`CLICK_UP`) on each widget sets
+  `state.selectedIndex` to that widget's own index and calls `syncFocus()`, so touch and
+  physical-key focus always agree (this fixed an earlier bug where a widget's own
+  `CLICK_DOWN` handler set its "selected" visual directly and then immediately called
+  `syncFocus()`, which recomputed from `selectedIndex` and undid it in the same tick).
+- **Focus styling — dark/light contour, not background swap**: the Open button and the Go
+  deeper button each draw an oversized `FILL_RECT` "border" behind their body
+  (`widgets.btnBorder` / `widgets.deepBorder`), colored `STROKE_COLOR_UNFOCUSED` (dark)
+  normally and `STROKE_COLOR_FOCUSED` (light) when focused — `setButtonSelected()` /
+  `setDeepSelected()` only toggle this border color (Go deeper additionally toggles its
+  `deepBg` fill between `MENU_NORMAL_COLOR`/`MENU_PRESSED_COLOR`; its icon (`icons/more.png`)
+  does not currently change between focus states — both branches of the ternary in
+  `setDeepSelected()` reference the same path). The Help icon is unchanged: bw ↔ colored
+  `question_64*.png` swap only, no border.
+- **`scrollToSelected()`**: on every `KEY_UP`/`KEY_DOWN` press (not on touch — the finger is
+  already on the target), scrolls the page (`@zos/page scrollTo`) so the newly-focused
+  element is vertically centered on screen, using each element's known `y`/height from
+  `this.layout` — same center-on-focus idea as `page/index.js`'s `scrollToItem` /
+  `page/collection.js`'s `scrollToItem`.
 - **`handleOpenClick()`**: pushes to `page/show` with
   `{ day: AppStorage.getMandalaDayString(), title, fromLocalStorage, type: PRACTICE_SHOW }`,
   where `fromLocalStorage` is true iff the stored `MANDALA_DAY` already equals today.
-- **Help**: pushes `page/help` with `SLIDES_PRACTICE` (3 slides, action → `page/qr`).
+- **`openHelp()`**: fires `CTA.OPEN_DAILY_HELP` (§5.6), then pushes `page/help` with
+  `DAILY_PRACTICE` (3 slides; slide 3's action carries `url: WEBSITE_URL, ref: "help_practice"`).
+- **`openDeep()`** (Go deeper only): fires `CTA.OPEN_DEEPER` (§5.6), then pushes `page/help`
+  with `DEEP_PRACTICE` (5 slides — "One Date" / "One Mandala" / "One Owner" / "Make it
+  you", the strongest scarcity/urgency copy in the app; slide 5's action carries
+  `url: WEBSITE_URL, full: true, ref: "deep_practice"`).
+- `IDLE_VIEWS_COUNTER = 15` is a hardcoded, untested threshold — not tied to streak or any
+  A/B mechanism. Product follow-up, not a defect.
 
 ### 4.3 `page/show.js` — Generic mandala display
 - **Role**: shared screen for both the daily practice image and any collection item image.
@@ -186,7 +216,8 @@ should be treated as the project's *de facto* interaction contract:
 - **`getCollection()`**: sends `GET_COLLECTION`. Response contract *as read by this file*:
   `{ status: "OK", collection: [...] }` → cache + render; `{ status: "NO_LINK" }` → render
   empty state with a "wallet not linked" message (help/settings icon still shown); anything
-  else → `SCREEN_ERROR`. **See §6 for a field-name mismatch against `page/nolink.js`.**
+  else → `SCREEN_ERROR`. `page/nolink.js` used to read the opposite field (`data.result`);
+  it has been corrected to read `data.status` too, so both pages now agree (see §4.5).
 - **List item shape**: `{ id, day, name }`. Row icon is `ic_collection.png` if
   `AppStorage.getRecord(item.day)` (a cached local file path) exists, else
   `ic_not_loaded.png`. Tapping a row pushes `page/show` with
@@ -218,27 +249,31 @@ should be treated as the project's *de facto* interaction contract:
 ### 4.5 `page/nolink.js` — Collection access gate
 - **Role**: shown instead of `page/collection` when `STORAGE_KEYS.LINKED` is falsy (routed
   from `page/index.executeAction()`).
-- **Menu**: "Details" → `page/linkinfo` (via `replace`), "Link" → `page/link` (via
-  `replace`, with `params.url = AppStorage.getLinkUrl()`).
+- **Menu**: "Details" → `page/linkinfo` (via `replace`, fires `CTA.OPEN_COLLECTION_HELP` —
+  see §5.6), "Link" → `page/link` (via `replace`, with `params.url = AppStorage.getLinkUrl()`,
+  fires `CTA.OPEN_LINK_QR`).
 - **Rule — background re-check**: on `build()`, if `STORAGE_KEYS.LINKED` is already true it
   `replace()`s straight to `page/collection`; otherwise it fires `GET_COLLECTION` in the
   background (`checkLinkInBackground()`, guarded by `state.checking` against overlap) so
   that a link made on the website while the nolink screen is open gets picked up without
-  user action. On success (`result === "Ok"`) it sets `LINKED=true`, caches the collection,
-  and — **only if the page is still the visible one** (`state.visible`) — replaces to
-  `page/collection`. **This file also defines `onResume()`/`onPause()` to keep
-  `state.visible` in sync, intending the same background re-check to re-run every time the
-  page is revisited — but per §6, the device `Page` API has no `onResume`/`onPause` hooks
-  at all, so neither ever fires.** `state.visible` is set once in `build()` and then never
-  changes; the guard it feeds (`if (this.state.visible) replace(...)` inside
-  `checkLinkInBackground()`'s success handler) is therefore always checking a value that
-  was fixed at construction time. In practice this doesn't break the page — the one
-  `build()`-time check still runs and still works — it just means "re-check every time you
-  come back to this screen" was never actually happening. Pre-existing, not introduced by
-  the `page/settings.js` refresh work; left as-is here since fixing it wasn't asked for.
-- **Contract note**: this file reads the `GET_COLLECTION` response as
-  `{ result: "Ok" | "NO_LINK", collection }` — the **opposite field name** from
-  `page/collection.js`'s `{ status: "OK" | "NO_LINK" }`. See §6.
+  user action. On success (`status === "OK"`) it fires `CTA.LINKED` (§5.6 — this is the
+  "link confirmed without the user ever opening `page/link`" detection path), sets
+  `LINKED=true`, caches the collection, and — **only if the page is still the visible one**
+  (`state.visible`) — replaces to `page/collection`. **This file also defines
+  `onResume()`/`onPause()` to keep `state.visible` in sync, intending the same background
+  re-check to re-run every time the page is revisited — but per §6, the device `Page` API
+  has no `onResume`/`onPause` hooks at all, so neither ever fires.** `state.visible` is set
+  once in `build()` and then never changes; the guard it feeds
+  (`if (this.state.visible) replace(...)` inside `checkLinkInBackground()`'s success
+  handler) is therefore always checking a value that was fixed at construction time. In
+  practice this doesn't break the page — the one `build()`-time check still runs and still
+  works — it just means "re-check every time you come back to this screen" never actually
+  happens. Still a live, un-fixed platform limitation; not touched by this update.
+- **`GET_COLLECTION` field contract**: reads `{ status: "OK" | "NO_LINK", collection }` —
+  the **same** field name `page/collection.js` reads (`data.status`). Resolved: this file
+  used to read `data.result` instead, the opposite of `collection.js`'s convention and of
+  the companion's own `{status:'ERROR', ...}` exception shape (§7); it's now aligned with
+  both.
 
 ### 4.6 `page/link.js` — Wallet linking flow
 - **Role**: QR-based device↔wallet pairing, driven entirely through `utils/watch-api.js`
@@ -255,10 +290,14 @@ should be treated as the project's *de facto* interaction contract:
     `LINK_STATUS` every `POLL_MS` (4000ms) via `setInterval`, for at most
     `ceil(d.ttlSec*1000/POLL_MS)` ticks (default `ttlSec=600` → ~150 ticks) before expiring
     (`qr_expired`).
-  - `showConfirm(wallet)` → user picks **Confirm** (`LINK_CONFIRM`) or **Cancel**
-    (`LINK_REJECT`, then restarts `startLink()`).
-  - `showDone(ok, msg)`: always writes `STORAGE_KEYS.LINKED = ok` (a boolean — note this is
-    the only successful non-boolean-safe write path if `ok` is undefined/error).
+  - `showConfirm(wallet)` → user picks **Confirm** (fires `CTA.CONFIRM_LINK` — see §5.6 —
+    then `LINK_CONFIRM`) or **Cancel** (`LINK_REJECT`, then restarts `startLink()`; no CTA
+    is fired on Cancel).
+  - `showDone(ok, msg)`: fires `CTA.LINKED` when `ok` is true — this one spot covers all
+    three paths that reach it (`restore()` finding an already-linked wallet, `poll()`
+    detecting a fresh link, a successful `confirm()`) — then always writes
+    `STORAGE_KEYS.LINKED = ok` (a boolean — note this is the only successful
+    non-boolean-safe write path if `ok` is undefined/error).
 - **Screen kept awake** for the QR step only (`setPageBrightTime`/`pauseDropWristScreenOff`
   600000ms), reset on destroy.
 - Network/BLE errors at every step degrade to `showDone(false, err_internet_connection)`
@@ -267,25 +306,43 @@ should be treated as the project's *de facto* interaction contract:
 ### 4.7 `page/linkinfo.js` — Static "why link" explainer
 - Single vertically-scrollable page (title, divider, body text, one CTA button). No key
   navigation, no state machine — relies on ZeppOS's default free-scroll behavior.
-- CTA pushes `page/link` with `{ url: AppStorage.getLinkUrl() }`.
+- CTA fires `CTA.OPEN_COLLECTION_QR` (§5.6), then pushes `page/link` with
+  `{ url: AppStorage.getLinkUrl() }`.
 
 ### 4.8 `page/help.js` — Generic help slideshow
 - **Contract**: takes `params = JSON.stringify({ slides })` where each slide is
-  `{ titleKey, textKey, action?: { labelKey, url } }`. Used by both `page/index`
-  (`SLIDES_MAIN`) and `page/practice` (`SLIDES_PRACTICE`).
+  `{ titleKey, textKey, action?: { labelKey, url, full?, ref? } }`. Used by `page/index`
+  (`SLIDES_MAIN`) and `page/practice` (`DAILY_PRACTICE`, `DEEP_PRACTICE`).
 - Horizontal swiper (`SCROLL_MODE_SWIPER_HORIZONTAL`); haptic feedback on page-scroll-done
   (soft buzz mid-deck, strong buzz on the last slide).
-- A slide with `action` renders a button that pushes `page/qr` with `{ url: action.url }`.
+- A slide with `action` renders a button that pushes `page/qr` with
+  `{ url: action.url, full: action.full, ref: action.ref }` — `ref` is the
+  funnel-attribution tag for that entry point (§5.6); this file only forwards it, it
+  doesn't interpret it.
 - **If `slides` is empty/missing, `build()` logs an error and renders nothing** — no
   fallback UI.
 
 ### 4.9 `page/qr.js` — Generic "scan to open URL" screen
-- **Contract**: `params = JSON.stringify({ url })`; defaults to the website root URL if
-  absent/unparsable.
-- Static content pulled from fixed i18n keys (`help_qr_title/intro/domain/text`) —
-  **the displayed text is not parameterized by the passed-in URL's origin**, only the QR
-  code's `content` is. A caller passing an unrelated URL would show mismatched copy.
-- Renders a `QRCODE` widget + a Back button (`back()`).
+- **Contract**: `params = JSON.stringify({ url, full?, ref? })`; `url` defaults to the
+  website root if absent/unparsable, `full` toggles a QR-only fullscreen layout (hides
+  title/intro/body text, used by the Go deeper slide — §4.2), `ref` is an optional
+  funnel-attribution tag (§5.6).
+- **Attribution**: `withRef(url, ref)` appends `?ref=<ref>` (or `&ref=` if `url` already has
+  a query string) to the URL actually encoded in the `QRCODE` widget's `content` — the
+  *displayed* domain text is untouched, only the scannable payload carries `ref`. `build()`
+  also unconditionally fires `CTA.OPEN_QR` (§5.6) on every open of this screen, regardless
+  of whether `ref` is present.
+- **Perf note**: the `title`/`intro`/`text` i18n lookups and `getTextLayout()` measurements
+  run inside their respective `if (!this.state.fullScreen)` blocks, not unconditionally —
+  in `fullScreen` mode none of those three widgets are ever created, so measuring them is
+  skipped entirely rather than computed and discarded.
+- Static content is still pulled from fixed i18n keys (`help_qr_title/intro/domain/text`) —
+  **the displayed text is still not parameterized by `ref` or by the passed-in URL's
+  origin**, only the QR code's `content` carries that information; a caller passing an
+  unrelated `url`/`ref` still shows the same generic "Mint & Link" copy. Open product
+  follow-up, not addressed by the attribution work above.
+- Renders a `QRCODE` widget + (outside fullscreen) title/intro/domain/body text + a Back
+  button (`back()`).
 
 ### 4.10 `page/settings.js` — Collection maintenance actions
 - **Role**: the wallet/collection "settings" hub, reached from `page/collection.js`'s
@@ -330,8 +387,10 @@ should be treated as the project's *de facto* interaction contract:
      (rather than `push()`), there is never a second, stale collection instance left behind
      in the stack — a single `replace()` chain in, a single `replace()` chain out, exactly
      one collection instance at any time.
-  2. **Mint** (`openMint()`) — pushes `page/qr` with `{ url: WEBSITE_URL }`, same
-     destination as the "mint & link" help-slide action elsewhere in the app.
+  2. **Mint** (`openMint()`) — pushes `page/qr` with
+     `{ url: WEBSITE_URL, ref: "settings_mint" }`, same destination as the "mint & link"
+     help-slide action elsewhere in the app, tagged with its own `ref` (§5.6) so this entry
+     point is distinguishable in the site's logs.
   3. **Unlink** (`unlinkWallet()`) — calls `WatchApi.unlink(page)` → companion method
      `UNLINK` → backend `POST /device/unlink`. On `{status: "OK"}`: sets
      `STORAGE_KEYS.LINKED = false`, clears `STORAGE_KEYS.COLLECTION_JSON`, and `replace()`s
@@ -360,17 +419,25 @@ should be treated as the project's *de facto* interaction contract:
 ## 5. Core Logic, Rules & Data Contracts
 
 ### 5.1 Constants (`utils/config/constants.js`)
-- Colors: `NORMAL_COLOR 0x2C2C2C`, `PRESSED_COLOR 0x4A4A4A` (overridden per-layout on round
-  screens — see §2.1), `ERROR_COLOR 0xCC3344`. `ERROR_COLOR` is the newest addition, now
-  used for error-state text in `page/link.js` (`showDone(false, …)`) and `page/show.js`
-  (its error text widget) in place of the `0xcc3344`/`0xbdbdbd` literals those two files
-  used to hardcode locally. `DEFAULT_COLOR`/`DEFAULT_COLOR_TRANSPARENT` (previously
-  `0xfc6950`/`0xfeb4a8`) have been **removed** — grep confirms nothing references them
-  anymore.
+- Colors: `NORMAL_COLOR 0x2C2C2C`, `PRESSED_COLOR 0x4A4A4A`, `ERROR_COLOR 0xCC3344` — the
+  shared gray/error palette used by `page/index.js`, `page/collection.js`, `page/nolink.js`,
+  and `page/settings.js`. `page/practice.js` uses a *separate*, distinctly-named blue
+  palette instead (`PRACTICE_NORMAL_COLOR`/`PRACTICE_PRESSED_COLOR`/`PRACTICE_SELECTED_COLOR`,
+  plus `SECONDARY_BUTTON_HEIGHT`) exported from the per-shape
+  `zosLoader:./index.[pf].layout.js` files — not an override of this module's constants, a
+  different symbol set entirely (see §2.1). `ERROR_COLOR` is used for error-state text in
+  `page/link.js` (`showDone(false, …)`) and `page/show.js` (its error text widget) in place
+  of the `0xcc3344`/`0xbdbdbd` literals those two files used to hardcode locally.
+  `DEFAULT_COLOR`/`DEFAULT_COLOR_TRANSPARENT` (previously `0xfc6950`/`0xfeb4a8`) have been
+  **removed** — grep confirms nothing references them anymore.
 - `WEBSITE_URL = "https://mandala.garageno9.site"`.
+- `CTA`: the funnel-attribution label enum — see §5.6 for the full list and firing sites.
 - `STORAGE_KEYS`: `INSTALL_ID, MANDALA_DAY, MANDALA_PATH, STREAK_DAYS, BEST_STREAK,
-  COLLECTION_JSON, LINKED, LAST_NEWS, COLLECTION_REFRESH`. `COLLECTION_REFRESH` is the odd
-  one out: it's not really "data" like the others, it's a one-shot cross-page signal (see
+  VIEW_COUNTER, COLLECTION_JSON, LINKED, LAST_NEWS, COLLECTION_REFRESH`. `VIEW_COUNTER`
+  backs `AppStorage.addCounter()`/`getCounter()` — incremented once per successful
+  `PRACTICE_SHOW` render in `page/show.js`, read by `page/practice.js` to gate the "Go
+  deeper" button (§4.2). `COLLECTION_REFRESH` is the odd one out: it's not really "data"
+  like the others, it's a one-shot cross-page signal (see
   §4.4/§4.10) — written `true` by `page/settings.js`, read-and-cleared at the top of
   `page/collection.js`'s `build()` (`consumeRefreshRequest()`). It happens to use the same
   persistent-storage mechanism as everything else here only because that's the one
@@ -473,6 +540,47 @@ of its own at all (see §4.10/§4.4: it signals `page/collection.js` via a stora
 lets that page do the fetch). Any further new call site should follow `unlink`'s example,
 not the older ones.
 
+### 5.6 CTA / funnel-attribution tracking
+Two independent, additive mechanisms track how users move toward the website/mint funnel;
+neither depends on the other.
+
+- **`ref` query param (`page/qr.js`)**: every help-slide `action` object
+  (`page/index.js SLIDES_MAIN`; `page/practice.js DAILY_PRACTICE`/`DEEP_PRACTICE`) and
+  `page/settings.js`'s `openMint()` carries a `ref` string alongside `url`. `page/help.js`
+  forwards it unchanged into `page/qr.js`'s params; `qr.js` appends it to the URL encoded in
+  the QR (`withRef()` — §4.9). Current values: `help_main`, `help_practice`,
+  `deep_practice`, `settings_mint`. This lets the *website* attribute a scan to the specific
+  in-app entry point that produced it, purely via its own access logs — nothing is sent back
+  to the watch/companion for this.
+- **`CTA_EVENT` companion method** (`utils/watch-api.js WatchApi.sendCtaEvent(page, cta)` →
+  `app-side/index.js sendCtaEvent()` → `GET {WEBSITE_URL}/api/watch//event/{cta}`, same
+  three headers as every other companion→backend call — `User-Agent`, `X-App-Version`,
+  `X-User`): a fire-and-forget ping that records a labeled funnel step server-side,
+  independent of whether that step ever reaches `page/qr.js` (tapping Help, or confirming a
+  wallet link, aren't QR events). Every call site does
+  `WatchApi.sendCtaEvent(this, CTA.X).catch(() => {})` — errors are swallowed and the
+  triggering navigation proceeds regardless.
+
+  `CTA` labels (`utils/config/constants.js`) and where each fires:
+
+  | Label | Fires in | Trigger |
+  |---|---|---|
+  | `OPEN_MAIN_HELP` | `page/index.js` `executeAction()` | Help icon activated on the main menu |
+  | `OPEN_DAILY_HELP` | `page/practice.js` `openHelp()` | Help icon activated on Practice |
+  | `OPEN_DEEPER` | `page/practice.js` `openDeep()` | "Go deeper" activated |
+  | `OPEN_COLLECTION_HELP` | `page/nolink.js` `openDetails()` | "Details" tapped on the no-link gate |
+  | `OPEN_LINK_QR` | `page/nolink.js` `openLinkQr()` | "Link" tapped on the no-link gate |
+  | `OPEN_COLLECTION_QR` | `page/linkinfo.js` CTA button | "Details on website" tapped |
+  | `OPEN_QR` | `page/qr.js` `build()` | any open of the generic QR screen |
+  | `CONFIRM_LINK` | `page/link.js` `confirm()` | "Confirm" tapped on the wallet-confirmation screen |
+  | `LINKED` | `page/link.js` `showDone(true, …)`; `page/nolink.js` `checkLinkInBackground()` on `status === "OK"` | device confirms the wallet link succeeded — two independent detection paths (via `page/link.js`, or discovered already-linked in the background from `page/nolink.js`) |
+
+  Together these give a step-by-step funnel: entry CTA tapped → reached a QR screen (`ref`
+  identifies which one) → (link flow only) confirmed → linked. **Not instrumented:**
+  Cancel/Reject on the wallet-confirmation screen — only the success path is labeled, so a
+  user who backs out there is only visible as an implicit gap between `CONFIRM_LINK` and
+  `LINKED`, not a labeled event of its own.
+
 ---
 
 ## 6. Cross-Cutting Rules, Inconsistencies & Exceptions
@@ -481,54 +589,25 @@ These are places where behavior deviates from what a reader would expect from on
 the codebase alone, or where two call sites disagree. Recorded here so future changes fix
 them deliberately (in the spec first) rather than by accident.
 
-> **Build-blocking right now: item 0.** `page/index.r.layout.js` does not parse — every
-> round-screen build is currently broken. See below.
+> **Resolved since the last pass** (kept here only as a pointer to where the current
+> behavior is now documented, not as open items): round-build `SyntaxError` → §2.1;
+> square-layout missing color exports → §2.1; `GET_COLLECTION` field-name mismatch between
+> `page/collection.js`/`page/nolink.js` → §4.5; `ScheduleNotification` inverted guard → §4.1.
 
-0. **`page/index.r.layout.js` has a duplicate-declaration `SyntaxError` — round builds
-   cannot compile.** It imports `NORMAL_COLOR`, `PRESSED_COLOR`, `ERROR_COLOR` from
-   `utils/config/constants.js`, then two lines later declares
-   `export const NORMAL_COLOR = 0x0E8CE6` and `export const PRESSED_COLOR = 0x0B72BD` —
-   an imported binding and a local `const` with the same name in the same module scope.
-   Confirmed with `node --check`: `SyntaxError: Identifier 'NORMAL_COLOR' has already been
-   declared`. None of the three imported names are used anywhere in the file's body (the
-   file already defines and exports its own color constants for consumers like
-   `page/practice.js`, `page/collection.js`, `page/nolink.js`), so the fix is almost
-   certainly to delete the import block entirely rather than rename anything. Likely
-   introduced while adding `ERROR_COLOR` support during the same styling pass that touched
-   `page/help.js`, `page/link.js`, `page/linkinfo.js`, `page/qr.js`, `page/show.js`, and
-   `page/index.s.layout.js` (which imports the same three names but, having no local
-   `NORMAL_COLOR`/`PRESSED_COLOR` declarations of its own, only ends up with three more
-   unused-but-harmless imports rather than a syntax error). Not fixed as part of this spec
-   update — only asked to document the code as it stands.
-1. **`GET_COLLECTION` response field name mismatch.** `page/collection.js` branches on
-   `data.status` (`"OK"` / `"NO_LINK"` / other-as-error). `page/nolink.js` branches on
-   `data.result` (`"Ok"` / `"NO_LINK"`). The companion (`app-side/index.js getCollection`)
-   just forwards whatever the backend returns from `POST /api/watch/collection`, except on
-   a local network exception where it returns `{ status: 'ERROR', error: 'network' }`
-   (using `status`, matching `collection.js`'s convention, not `nolink.js`'s). One of the
-   two watch-side pages is reading the wrong field today; which one is "correct" depends on
-   what the live backend actually sends (external to this repo) and should be settled and
-   written down here before either page is touched again.
-2. **`ScheduleNotification.scheduleNotification(item)` guard is inverted.** The function
-   body is gated by `if (!item || !item.title || !item.content)` — i.e. it only proceeds
-   to schedule an alarm when the required fields are **missing**, and then immediately
-   does `String(item.title)` on a possibly-null `item`. As written, a well-formed
-   `{title, content}` call (as `page/index.js loadNews()` makes) falls through to the
-   final `return 0`, and a malformed call throws inside the guarded branch instead of
-   short-circuiting. This function currently cannot successfully schedule a notification
-   for a valid `item`. Needs a spec decision (invert the condition) before relying on the
-   news-notification feature.
-3. **Two request-calling conventions coexist.** `WatchApi` (link-only) vs. ad-hoc
+0. **Two request-calling conventions coexist.** `WatchApi` (link methods, `unlink`, and
+   `sendCtaEvent` — see §5.5/§5.6) vs. ad-hoc
    `this.request({ method, request: {...Profile.createRequestData(), ...} })` (everything
-   else). Not a bug, but an acknowledged half-finished refactor — see §5.5.
-4. **Selection/focus list pattern is duplicated three times** with small variations
+   else: `GET_MANDALA`/`OPEN_MANDALA` via `page/show.js`, `GET_COLLECTION` via
+   `page/collection.js`/`page/nolink.js`, `GET_NEWS` via `page/index.js`). Not a bug, but an
+   acknowledged half-finished refactor — see §5.5.
+1. **Selection/focus list pattern is duplicated three times** with small variations
    (`page/index.js`, `page/collection.js`, `page/nolink.js` each define their own
    `updateSelection`/`attachSelectable`/key-nav wiring instead of sharing one component).
-   Functionally consistent today; a shared helper would reduce future drift.
-5. **Square-screen layout is incomplete** (§2.1): `page/index.s.layout.js` is missing the
-   `NORMAL_COLOR`/`PRESSED_COLOR`/`SELECTED_COLOR`/`MENU_BUTTON` exports that
-   `page/index.r.layout.js` provides and that `page/practice.js` imports unconditionally.
-6. **Four separate, unused TGA-thumbnail resizer implementations** exist in `utils/`
+   Functionally consistent today; a shared helper would reduce future drift. (`page/practice.js`'s
+   up-to-three-way focus cycling — §4.2 — is a related but distinct interaction model: a
+   single cycling index with contour-color focus, not a list of rows; not folded into this
+   item.)
+2. **Four separate, unused TGA-thumbnail resizer implementations** exist in `utils/`
    (`TgaThumbnail.js`, `IndexedTgaThumbnail.js`, `ImageResizer.js`, `HardcoreResizer.js`),
    none imported anywhere. They read as successive iterations on the same idea (byte-level
    TGA downscaling for the collection list's thumbnail icons) but no page currently uses
@@ -536,16 +615,17 @@ them deliberately (in the spec first) rather than by accident.
    (`ic_collection.png` / `ic_not_loaded.png`) rather than rendering a real per-item
    thumbnail. Treat these as prototypes to finish/pick-one-and-delete-the-rest, not as
    dead weight to casually remove without checking intent first.
-7. **`device.js getLocale()` is unused** (§5.3) — kept for a possible future need to
+3. **`device.js getLocale()` is unused** (§5.3) — kept for a possible future need to
    branch on locale directly rather than through `getText`.
-8. **`page/settings.js` does not verify `STORAGE_KEYS.LINKED` before offering
-   Refresh/Unlink** (§4.10) — a deliberate choice (the flag can already be stale per item 1
-   above, and every action there is self-correcting), not an oversight.
-9. **Ambient/global companion APIs.** `app-side/index.js` uses `Logger`, `fetch`,
+4. **`page/settings.js` does not verify `STORAGE_KEYS.LINKED` before offering
+   Refresh/Unlink** (§4.10) — a deliberate choice (the flag can go stale any time the link
+   state changes outside this device's knowledge, and every action there is
+   self-correcting), not an oversight.
+5. **Ambient/global companion APIs.** `app-side/index.js` uses `Logger`, `fetch`,
    `network`, `image`, and `transferFile` with no imports — these are ZeppOS side-service
    globals injected at runtime, not missing dependencies. `logger` (lowercase, module
    `Logger.getLogger('mandala-day')`) is the one explicit local.
-10. **The device `Page` API has no `onResume`/`onPause` lifecycle hooks — confirmed from
+6. **The device `Page` API has no `onResume`/`onPause` lifecycle hooks — confirmed from
     `node_modules/@zeppos/device-types/dist/index.d.ts`'s `Page.Option` interface, which
     lists only `state`, `onInit`, `build`, `onDestroy`.** (`onResume`/`onPause` do exist,
     but only on the unrelated `SecondaryWidget` and side-service interfaces in the same
@@ -571,7 +651,7 @@ them deliberately (in the spec first) rather than by accident.
       instance via `replace()`, as `page/collection.js` now does, or (b) a background poll
       while the *current* page is different (as `page/nolink.js`'s `checkLinkInBackground`
       does, correctly, from `build()`).**
-11. **`page/settings.js`'s per-action button colors are dead data.** `renderActions()`
+7. **`page/settings.js`'s per-action button colors are dead data.** `renderActions()`
     still builds an `actions` array with a distinct `normalColor`/`pressColor` per entry
     (gray for Refresh, blue for Mint, red for Unlink — the original color-coded design),
     but `buildActionSection()` no longer reads `action.normalColor`/`action.pressColor` —
@@ -589,13 +669,14 @@ Single `onRequest(req, res)` router keyed on `req.method`:
 |---|---|---|---|
 | `GET_MANDALA` | `getMandala` | `network.downloader` → `GET {WEBSITE_URL}/api/watch/{day}/{size}` → `image.convert()` → BLE file transfer | `{ result: "Ok", filePath }` (only after the `transferred` file-transfer event fires) |
 | `OPEN_MANDALA` | `openMandala` | `GET {WEBSITE_URL}/api/watch/repeat/{day}/{size}` | raw `response.body` (fire-and-forget signal from `page/show.js`) |
-| `GET_COLLECTION` | `getCollection` | `POST {WEBSITE_URL}/api/watch/collection` (via `linkApi`) | backend's raw body, or `{status:'ERROR', error:'network'}` on exception — see §6 item 1 |
+| `GET_COLLECTION` | `getCollection` | `POST {WEBSITE_URL}/api/watch/collection` (via `linkApi`) | backend's raw body, or `{status:'ERROR', error:'network'}` on exception |
 | `GET_NEWS` | `getNews` | `GET {WEBSITE_URL}/api/watch/zepp/news/{time}/{region}` | parsed JSON body |
 | `LINK_START` | `linkStart` | `POST {WEBSITE_URL}/device/link-start` | backend body + derived `qr = "{WEBSITE_URL}/link/add/{token}"` |
 | `LINK_STATUS` | `linkStatus` | `POST {WEBSITE_URL}/device/link-status` | backend body |
 | `LINK_CONFIRM` | `linkConfirm` | `POST {WEBSITE_URL}/device/link-confirm` with `{wallet}` | backend body |
 | `LINK_REJECT` | `linkReject` | `POST {WEBSITE_URL}/device/link-reject` | backend body |
 | `UNLINK` | `unlink` | `POST {WEBSITE_URL}/device/unlink` | backend body, or `{status:'ERROR', error:'network'}` on exception |
+| `CTA_EVENT` | `sendCtaEvent` | `GET {WEBSITE_URL}/api/watch//event/{cta}` (double slash is intentional, matches the live endpoint) | raw `response.body`, or `{status:'ERROR', error:'network'}` on exception — see §5.6 |
 
 - All `POST` calls go through `linkApi(path, request, extraBody)`, which always sends
   `deviceId: request.usr` **in the JSON body**, never in the URL — an explicit privacy
@@ -630,8 +711,16 @@ Single `onRequest(req, res)` router keyed on `req.method`:
 ## 9. Remaining Unknowns (external to this repo)
 
 - The actual JSON shapes returned by the live backend
-  (`mandala.garageno9.site/api/watch/...`) are not verifiable from this codebase — the
-  `GET_COLLECTION` field-name question in §6 item 1 can only be closed by checking the backend
-  or a capture of a real response.
+  (`mandala.garageno9.site/api/watch/...`) are not fully verifiable from this codebase. The
+  `GET_COLLECTION` field-name question (formerly tracked here) is resolved on the watch
+  side — both `page/collection.js` and `page/nolink.js` read `data.status` now — but
+  whether the *backend* actually sends `status` (rather than, say, both watch pages having
+  agreed on the wrong one) is still unconfirmed independently of this repo.
+- `GET_NEWS`'s `news[]` items are specified (by the person operating the backend) to carry
+  `{ date, title, body }` once populated; not independently observed from a live non-empty
+  response from this repo.
+- The exact response shape of the `CTA_EVENT` endpoint (`GET /api/watch//event/{cta}`, §5.6)
+  beyond "200 OK" is not specified/verified here — the watch side only cares that the
+  request fires, not what comes back.
 - No test suite exists (`package.json test` script is the CRA/npm-init placeholder that
   just exits with an error).

@@ -11,6 +11,8 @@ import { Vibrator } from "@zos/sensor";
 import { getDeviceInfo } from "@zos/device";
 import { back } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
+import { WatchApi } from "../utils/watch-api";
+import { CTA } from "../utils/config/constants.js";
 
 const logger = Logger.getLogger("help_qr");
 
@@ -60,11 +62,20 @@ function hapticSoft() {
   setTimeout(() => vibrator.stop(), 80);
 }
 
+// Помечает, из какого места приложения открыт QR, чтобы сайт мог
+// увидеть источник перехода в своей аналитике.
+function withRef(url, ref) {
+  if (!ref) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}ref=${encodeURIComponent(ref)}`;
+}
+
 Page(
   BasePage({
     state: {
       url: "https://mandala.garageno9.site",
-      fullScreen: false
+      fullScreen: false,
+      ref: null,
     },
 
     onInit(params) {
@@ -73,6 +84,7 @@ Page(
         const parsed = JSON.parse(params);
         if (parsed?.url) this.state.url = parsed.url;
         if (parsed?.full) this.state.fullScreen = parsed.full;
+        if (parsed?.ref) this.state.ref = parsed.ref;
       } catch (e) {
         logger.log("params parse failed", e);
       }
@@ -80,6 +92,7 @@ Page(
 
     build() {
       logger.log(`QR.JS`);
+      WatchApi.sendCtaEvent(this, CTA.OPEN_QR).catch(() => {});
       const domain = i18n("help_qr_domain");
 
       if (!this.state.fullScreen) {
@@ -129,7 +142,7 @@ Page(
       const bgX = (width - bgSize) / 2;
 
       createWidget(widget.QRCODE, {
-        content: this.state.url,
+        content: withRef(this.state.url, this.state.ref),
         x: bgX + UI.qrPad,
         y: bgY + UI.qrPad,
         w: qrSize,

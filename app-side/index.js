@@ -60,6 +60,7 @@ async function openMandala(request, res) {
   res(null, response.body);
 }
 
+
 function getMandala(request, res) {
 
   const filename = request.type === PRACTICE_SHOW ? 'mandaladay.png' : `${request.day}.png`;
@@ -201,7 +202,6 @@ async function linkStatus(request, res) {
   catch (err) { logger.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
-
 async function linkConfirm(request, res) {
   try { res(null, await linkApi('/device/link-confirm', request, { wallet: request.wallet })); }
   catch (err) { logger.log('linkConfirm error:', err); res(null, { status: 'ERROR', error: 'network' }); }
@@ -215,6 +215,26 @@ async function linkReject(request, res) {
 async function unlink(request, res) {
   try { res(null, await linkApi('/device/unlink', request, {})); }
   catch (err) { logger.log('unlink error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+}
+
+// ── Фиксация CTA-меток для аналитики на сайте ──────────────────────
+async function sendCtaEvent(request, res) {
+  try {
+    logger.log('sendCtaEvent:', request.cta);
+    const response = await fetch({
+      url: `${WEBSITE_URL}/api/watch/event/${request.cta}`,
+      method: 'GET',
+      headers: {
+        'User-Agent': `${request.info}`,
+        'X-App-Version': `${request.version}`,
+        "X-User": `${request.age}/${request.gender}/${request.region}/${request.usr}`,
+      }
+    });
+    res(null, response.body);
+  } catch (err) {
+    logger.log('sendCtaEvent error:', err);
+    res(null, { status: 'ERROR', error: 'network' });
+  }
 }
 
 
@@ -245,6 +265,8 @@ AppSideService(
         linkReject(req.request, res);
       } else if (req.method === "UNLINK") {
         unlink(req.request, res);
+      } else if (req.method === "CTA_EVENT") {
+        sendCtaEvent(req.request, res);
       }
     }
   })

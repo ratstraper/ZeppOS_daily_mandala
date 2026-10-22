@@ -8,7 +8,7 @@ import {
 import { BasePage } from '@zeppos/zml/base-page'
 import { WatchApi } from '../utils/watch-api'
 import AppStorage from '../utils/config/storage.js';
-import { STORAGE_KEYS } from '../utils/config/constants';
+import { STORAGE_KEYS, CTA } from '../utils/config/constants';
 import { log as Logger, px } from "@zos/utils";
 import {
   ERROR_COLOR
@@ -111,6 +111,7 @@ Page(BasePage({
   confirm(wallet) {
     if (this.state.busy) return
     this.state.busy = true
+    WatchApi.sendCtaEvent(this, CTA.CONFIRM_LINK).catch(() => {})
     WatchApi.linkConfirm(this, { wallet })
       .then(d => d && d.status === 'OK'
         ? this.showDone(true, t("linked", wallet))
@@ -219,6 +220,8 @@ Page(BasePage({
         text_size: UI.btnTextSize,
         click_func: () => this.restore()
       })
+    } else {
+      WatchApi.sendCtaEvent(this, CTA.LINKED).catch(() => {})
     }
     AppStorage.setRecord(STORAGE_KEYS.LINKED, ok)
   },
