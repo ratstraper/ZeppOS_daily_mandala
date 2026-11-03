@@ -39,111 +39,100 @@ msgstr "Лучший"
 
 // general help
 msgid "help_main_slide1_title"
-msgstr "Ежедневная практика"
+msgstr "Практика"
 
 msgid "help_main_slide1_text"
-msgstr "Практика открыта для всех.\n\nКаждый день появляется новая мандала по текущей дате.\n\nИспользуйте её для короткого ежедневного ритуала и ведите журнал практики."
+msgstr "Новая Мандала дня каждый день открытая всем.\n\nМожно использовать ее для короткой ежедневной медитации или просто любоваться ею как арт-объектом."
 
 msgid "help_main_slide2_title"
-msgstr "Личная коллекция"
+msgstr "Коллекция"
 
 msgid "help_main_slide2_text"
-msgstr "Коллекция показывает ваши личные мандалы как on-chain NFT.\n\nДата рождения или другая значимая дата может существовать только в одном экземпляре.\n\nКаждая мандала принадлежит только одному владельцу."
+msgstr "Твои значимые даты, отчеканенные в уникальных NFT-Мандалах. Их изображения отражают конкретные даты, поэтому остаются неизменными и доступны для просмотра на часах только тебе."
 
 msgid "help_main_slide3_title"
-msgstr "Получите свою"
+msgstr "Начать коллекцию"
 
 msgid "help_main_slide3_text"
-msgstr "Сминтите личную мандалу на сайте.\n\nПодключите кошелёк, свяжите его с часами и откройте свою коллекцию."
+msgstr "Чтобы отчеканить уникальные NFT-Мандалы для своей персональной Коллекции:\nПодключи кошелек, отчекань Мандалу, свяжи кошелек с часами."
 
 msgid "help_main_slide3_action"
-msgstr "Сканировать для минта"
+msgstr "Пройти на сайт"
 
 msgid "label_next"
 msgstr "Далее →"
 
 msgid "help_qr_title"
-msgstr "Минт и привязка"
+msgstr "Отсканируй"
 
 msgid "help_qr_intro"
-msgstr "Сканируйте телефоном, чтобы открыть сайт."
+msgstr "чтобы пройти на сайт"
 
 msgid "help_qr_domain"
 msgstr "mandala.garageno9.site"
 
 msgid "help_qr_text"
-msgstr "Сминтите мандалу, подключите кошелёк, затем свяжите эти часы."
+msgstr "Отчекань Мандалу, подключи кошелек, затем свяжи эти часы."
 
 msgid "common_back"
 msgstr "Назад"
 
 //practice help
-msgid "help_practice_slide1_title"
-msgstr "Daily Practice"
+msgid "about_practice_slide_title"
+msgstr "Твоя практика"
 
-msgid "help_practice_slide1_text"
-msgstr "Each day has its own reflection\nin Mandala.\n\nOpen it. Look into it.\nBreathe with it.\nEven 3 minutes is enough."
+msgid "about_practice_slide_text"
+msgstr "Каждый день несет свое отражение в Мандале.\n\nОткрой ее. Позволь взгляду скользить по линиям, цветам и узорам от края к центру и обратно. Дыши вместе с ней.\nИсследуй свое текущее состояние.\nДостаточно 3 минут практики."
 
-msgid "help_practice_slide2_title"
-msgstr "Focus method"
+msgid "about_practice_slide_title2"
+msgstr "Отслеживай"
 
-msgid "help_practice_slide2_text"
-msgstr "Look from edge to center\nand back.\nLet your gaze flow through\nthe lines, colors, and patterns\nfor 3 mins.\nObserve your current state."
-
-msgid "help_practice_slide3_title"
-msgstr "Notice your"
-
-msgid "help_practice_slide3_text"
-msgstr "Streak - your current series\nof daily sessions.\n\nBest - your personal record\nof streak."
-
-msgid "help_practice_slide3_action"
-msgstr "Начать практику →"
+msgid "about_practice_slide_text2"
+msgstr "Серия - текущая серия ежедневных практик.\nЛучший - твой личный рекорд в сериях."
 
 msgid "practice_intro_dont_show_again"
-msgstr "Больше не показывать этот экран"
+msgstr "Больше не показывать"
+
+msgid "help_practice_slide3_action"
+msgstr "Начать"
+
+
 
 //deep practice help
 msgid "deep_button"
-msgstr "Узнать больше"
+msgstr "Пойти глубже"
 
 msgid "deep_practice_slide1_title"
-msgstr "Go deeper"
+msgstr "Пойти глубже"
 
 msgid "deep_practice_slide1_text"
-msgstr "Daily Mandala helps\nyou build the habit.\n\nYour Birth Mandala makes\nthe practice personal."
+msgstr "Мандала Дня помогает создать привычку.\n\nМандала Рождения делает твою практику глубоко личной."
 
 msgid "deep_practice_slide1_action"
-msgstr "Learn more →"
+msgstr "Дальше →"
 
 msgid "deep_practice_slide2_title"
-msgstr "One Date"
+msgstr "Одна дата"
 
 msgid "deep_practice_slide2_text"
-msgstr "A day that changed\nyour life:\nYour birthday or any\nmeaningful date.\nIt may still be unclaimed."
+msgstr "День, изменивший твою жизнь:
+твой день рождения или любая другая значимая дата могут быть заключены в уникальном рисунке дня."
 
 msgid "deep_practice_slide3_title"
-msgstr "One Mandala"
+msgstr "Одна Мандала"
 
 msgid "deep_practice_slide3_text"
-msgstr "Every calendar date has\nexactly one Mandala.\nOnce minted, that date \nis gone forever."
+msgstr "Каждая календарная дата имеет ровно одну NFT-Мандалу. Она может стать твоей и никто не сможет отчеканить вторую Мандалу на эту же дату."
 
 msgid "deep_practice_slide4_title"
-msgstr "One Owner"
+msgstr "Один владелец"
 
 msgid "deep_practice_slide4_text"
-msgstr "Only one person\ncan own each date.\n\nIf it's yours,\nit stays yours forever.\nWill it be you?"
+msgstr "Только один человек может владеть ей в один момент времени.\nПроверь на сайте дату и отчекань свою Мандалу."
 
 msgid "deep_practice_slide4_action"
-msgstr "Check your date →"
+msgstr "Проверить дату →"
 
-msgid "deep_practice_slide5_title"
-msgstr "Make it you"
-
-msgid "deep_practice_slide5_text"
-msgstr "Mint your Birth Mandala\non the website.\n\nLink your wallet to see\nit in your Collection."
-
-msgid "deep_practice_slide5_action"
-msgstr "Scan to continue →"
 
 ///////////////
 msgid "month_january"
@@ -188,13 +177,7 @@ msgstr "?"
 msgid "settings"
 msgstr "Настройки"
 
-// nolink screen
-msgid "no_link_title"
-msgstr "Нет связи с NFT коллекцией"
-
-msgid "no_link_details"
-msgstr "Подробнее"
-
+// collection screen: not-linked state
 msgid "no_link_link"
 msgstr "Связать"
 
@@ -203,9 +186,6 @@ msgstr "Мандала на вашем запястье"
 
 msgid "no_link_help_text"
 msgstr "Если вы владеете одной или несколькими NFT из коллекции Мандала души, вы можете связать их с вашими часами. И они в любой момент будут доступны вам на вашем запястье.\n\nПерейдите по ссылке на сайт, подтвердите владение кошельком, на котором есть NFT из коллекции, и ваши мандалы будут отображаться на ваших часах в разделе Коллекция."
-
-msgid "no_link_help_action"
-msgstr "Детали на сайте"
 
 // collection page
 msgid "loading"

@@ -33,13 +33,8 @@ const DEEP_PRACTICE = [
   {
     titleKey: "deep_practice_slide4_title",
     textKey: "deep_practice_slide4_text",
-    label: "deep_practice_slide4_action",
-  },
-  {
-    titleKey: "deep_practice_slide5_title",
-    textKey: "deep_practice_slide5_text",
     action: {
-      labelKey: "deep_practice_slide5_action",
+      labelKey: "deep_practice_slide4_action",
       url: WEBSITE_URL,
       full: true,
       ref: "deep_practice",

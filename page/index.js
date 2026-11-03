@@ -252,16 +252,12 @@ Page(
         return;
       }
 
-      if (item.id === 'collection' && !AppStorage.getRecord(STORAGE_KEYS.LINKED)) {
-        push({ url: 'page/nolink' });
-      } else {
-        let url = `page/${item.id}`;
-        const pushOptions = { url };
-        if (item.params) {
-          pushOptions.params = item.params;
-        }
-        push(pushOptions);
+      let url = `page/${item.id}`;
+      const pushOptions = { url };
+      if (item.params) {
+        pushOptions.params = item.params;
       }
+      push(pushOptions);
     },
 
     updateStatusText(message) {

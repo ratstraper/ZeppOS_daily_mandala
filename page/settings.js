@@ -274,10 +274,10 @@ Page(
         .then((data) => {
           this.state.busy = false;
           if (data && data.status === "OK") {
-            logger.log("Wallet unlinked, switching to nolink screen");
+            logger.log("Wallet unlinked, switching to collection (shows the not-linked state)");
             AppStorage.setRecord(STORAGE_KEYS.LINKED, false);
             AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, "");
-            replace({ url: "page/nolink" });
+            replace({ url: "page/collection" });
           } else {
             logger.log("Unlink error from phone:", data && data.status);
             this.widgets.unlinkButton.setProperty(hmUI.prop.VISIBLE, true);

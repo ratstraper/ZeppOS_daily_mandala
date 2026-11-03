@@ -75,10 +75,8 @@ page/index.js                 Main menu (Practice / Collection / Help)
 page/practiceintro.js         One-time-until-dismissed "soft" onboarding before page/practice
 page/practice.js              Daily-practice idle screen (streak, Open button)
 page/show.js                  Generic "show a mandala image" screen (loading/result/error)
-page/collection.js            NFT collection list (loading/result/error, empty state)
-page/nolink.js                "Not linked to a wallet" gate screen for Collection
+page/collection.js            NFT collection: not-linked / populated / empty states, no gate screens
 page/link.js                  QR-based wallet linking + polling state machine
-page/linkinfo.js              Static explainer for why/how to link a wallet
 page/help.js                  Generic horizontal-swiper help/onboarding slideshow
 page/qr.js                    Generic "scan this QR to open a URL" screen
 page/settings.js              Collection settings hub: refresh / mint / unlink actions
@@ -87,7 +85,7 @@ page/index.s.layout.js        Square-screen layout constants/helpers (same expor
 utils/config/constants.js     Colors, WEBSITE_URL, STORAGE_KEYS, screen-type enum, CTA labels (see §5.6)
 utils/config/device.js        Device info, i18n language-code → locale map, date formatting
 utils/config/profile.js       Builds the common request payload sent to the companion
-utils/config/storage.js       AppStorage: LocalStorage wrapper + practice-streak rules + view counter
+utils/config/storage.js       AppStorage: LocalStorage wrapper + practice-streak rules
 utils/watch-api.js            WatchApi: thin request wrapper — link/*, unlink, sendCtaEvent (see §5.6)
 utils/components/LoadingAnimationComponent.js   IMG_ANIM-based spinner widget
 utils/ScheduleNotification.js Schedules a delayed local notification via @zos/alarm
@@ -110,9 +108,10 @@ should be treated as the project's *de facto* interaction contract:
   cycles the index, `KEY_SELECT` activates it, and touch (`CLICK_DOWN`/`MOVE`/`CLICK_UP`)
   mirrors the same activation logic. `updateSelection()`/`attachSelectable()` are the
   canonical helper shapes (first defined in `page/index.js`, later duplicated with small
-  variations in `page/collection.js` and `page/nolink.js` — see §6 on duplication).
+  variations in `page/collection.js` — see §6 on duplication).
 - **Screen-state pattern**: `SCREEN_LOADING` / `SCREEN_RESULT` / `SCREEN_ERROR` (string
-  constants local to each file) toggle group visibility; a `LoadingAnimationComponent` is
+  constants local to each file; `page/collection.js` adds a fourth, `SCREEN_NOT_LINKED`,
+  §4.4) toggle group visibility; a `LoadingAnimationComponent` is
   shown/deleted on entering/leaving `SCREEN_LOADING`.
 
 ### 4.1 `page/index.js` — Main menu
@@ -149,11 +148,11 @@ should be treated as the project's *de facto* interaction contract:
   Reached via `push()` (so hardware-back from here returns to the main menu, same as any
   other `push()`'d screen in this app).
 - **Layout**: a single vertically free-scrolling page (no `setScrollMode` call — relies on
-  ZeppOS's default free-scroll because content height exceeds the screen, same mechanism
-  `page/linkinfo.js` uses), built with a running Y cursor sized from `getTextLayout()`
-  (the same measure-then-place pattern `page/linkinfo.js` and `page/settings.js` use). No
-  physical-key navigation is registered — consistent with `page/linkinfo.js`'s choice for
-  free-scroll explainer screens.
+  ZeppOS's default free-scroll because content height exceeds the screen), built with a
+  running Y cursor sized from `getTextLayout()` (the same measure-then-place pattern
+  `page/settings.js` uses, and the now-deleted `page/linkinfo.js` used to). No physical-key
+  navigation is registered, same choice. A page-level `hmUI.widget.PAGE_SCROLLBAR` widget is
+  created at the top of `build()` to signal that the content is taller than the screen.
 - **Content**: a local `SLIDES` array of 3 `{ titleKey, textKey }` pairs — reusing the same
   i18n keys (`help_practice_slide1..3_title/text`) the old swiper-based `DAILY_PRACTICE`
   deck used — rendered one after another top-to-bottom (title, body text, a thin divider
@@ -246,76 +245,98 @@ should be treated as the project's *de facto* interaction contract:
 - Any physical key press on this page triggers `hmUI.gotoBack()` (whole page is
   "press anything to go back").
 
-### 4.4 `page/collection.js` — NFT collection list
-- **Role**: lists the user's linked mandalas.
-- **On build**: tries `loadStoredCollection()` (parses `STORAGE_KEYS.COLLECTION_JSON`;
-  corrupted JSON is caught and dropped, see §5.2 note on `removeRecord`). If present,
-  renders immediately from cache. **If absent, `getCollection()` runs regardless of the
-  `LINKED` flag** — the `linked` local variable is read but its two branches are
-  identical, i.e. the flag is currently *not* used to change behavior here (see §6).
-- **`getCollection()`**: sends `GET_COLLECTION`. Response contract *as read by this file*:
-  `{ status: "OK", collection: [...] }` → cache + render; `{ status: "NO_LINK" }` → render
-  empty state with a "wallet not linked" message (help/settings icon still shown); anything
-  else → `SCREEN_ERROR`. `page/nolink.js` used to read the opposite field (`data.result`);
-  it has been corrected to read `data.status` too, so both pages now agree (see §4.5).
+### 4.4 `page/collection.js` — NFT collection: single entry point, no gate screens
+- **Role**: the one screen for the whole Collection area. `page/nolink.js` and
+  `page/linkinfo.js` — the former "not linked" gate (two buttons: "Details"/"Link") and its
+  "why link" explainer — have both been **deleted**; their combined role is now decided
+  inside this file's own `build()`, with one button per state instead of a
+  Details-then-Link two-step. `page/index.js` no longer branches on `STORAGE_KEYS.LINKED`
+  before routing here (§4.1) — Collection is now a plain menu item like any other; this
+  file alone decides what to draw.
+- **Three mutually-exclusive screen states**, added to the existing
+  `SCREEN_LOADING`/`SCREEN_RESULT`/`SCREEN_ERROR` set as a new `SCREEN_NOT_LINKED`:
+  1. **Not linked** (`SCREEN_NOT_LINKED`) — `widgets.notLinkedGroup` (built once up front,
+     toggled via `setVisible()` exactly like `loadingGroup`/`errorGroup`): `no_link_help_title`
+     + `no_link_help_text` (the former `page/linkinfo.js` copy, now embedded here) + one
+     button (i18n `no_link_link`) that fires `CTA.OPEN_LINK_QR` and pushes `page/link` with
+     `{ url: AppStorage.getLinkUrl() }` — the real pairing QR, not a second
+     "learn more" step. No settings icon in this state (nothing to configure yet). The group
+     also contains an `hmUI.widget.PAGE_SCROLLBAR` child (so it shows/hides with the group),
+     since `no_link_help_text` is long enough to push content below the screen on most
+     layouts.
+  2. **Linked, collection has items** (`SCREEN_RESULT`, non-empty) — unchanged from before:
+     the row list + the settings icon as the trailing focusable element.
+  3. **Linked, collection empty** (`SCREEN_RESULT`, empty array) — `empty_collection` text +
+     a new **Mint** button (i18n `settings_action_mint_title`, pushes `page/qr` with
+     `{ url: WEBSITE_URL, ref: "collection_mint" }` — own `ref`, distinct from
+     `settings_mint`, §5.6) + the settings icon below it. This is the one state that used to
+     show `empty_collection` with **no** call to action beyond the settings icon; now there's
+     a direct path to minting right where a user who just checked and found nothing would be
+     looking.
+  Both new buttons (`notLinkedGroup`'s link button, the empty-state Mint button) are plain
+  `widget.BUTTON`s with `click_func` — touch-only, not part of the `bgRects`/`selectedIndex`
+  physical-key cycle, matching this app's existing convention for standalone CTA buttons
+  (`page/settings.js`, `page/qr.js`'s back button): "no physical up/down/select cycling
+  between standalone buttons" already applied to those pages and now to these two.
+- **On `build()`**: after `consumeRefreshRequest()` (still checked first — still the only
+  way `page/settings.js`'s Refresh reaches a real network call, now a link-status check
+  followed conditionally by `GET_COLLECTION`, see below), reads
+  `STORAGE_KEYS.LINKED`. If falsy: shows `SCREEN_NOT_LINKED` **immediately** (no loading
+  spinner) and separately fires `checkLinkInBackground()` — a silent `GET_COLLECTION` that
+  upgrades straight to `SCREEN_RESULT` if the backend says `"OK"` (the link happened on the
+  website before this flag caught up), moved here from the old `page/nolink.js` almost
+  verbatim, including its `state.checking` double-fire guard. Fires `CTA.LINKED` on that
+  silent upgrade. If the flag is truthy: cache-first as before (`loadStoredCollection()` →
+  `SCREEN_RESULT`, else `SCREEN_LOADING` + `getCollection()`).
+- **`getCollection()`**: sends `GET_COLLECTION`. `{status: "OK", collection}` → writes
+  `STORAGE_KEYS.LINKED = true`, caches the collection, `SCREEN_RESULT` (empty or not, per
+  above). `{status: "NO_LINK"}` → writes `STORAGE_KEYS.LINKED = false`, `SCREEN_NOT_LINKED`
+  — this file is now the **sole** writer and reader of `STORAGE_KEYS.LINKED` in the app
+  (previously shared with `page/nolink.js`). Anything else → `SCREEN_ERROR`.
 - **List item shape**: `{ id, day, name }`. Row icon is `ic_collection.png` if
   `AppStorage.getRecord(item.day)` (a cached local file path) exists, else
   `ic_not_loaded.png`. Tapping a row pushes `page/show` with
   `{ id, day, title: name, fromLocalStorage: true, type: COLLECTION_SHOW }`.
-- **Help/settings icon** is always the last focusable element (even on the empty-collection
-  screen) and opens `page/settings` via **`replace()`, not `push()`** — this page is
-  destroyed, not paused, while Settings is open. `page/settings.js` is where collection
-  maintenance actions (refresh / mint / unlink) live — see §4.10 — not on this page,
-  regardless of whether the collection is empty or not. The `replace()` choice (rather than
-  the `push()` every other "open a sub-screen" transition in this app uses) exists purely
-  to guarantee there is never more than one `page/collection.js` instance in the navigation
-  stack at a time — see §4.10 and §6 for why: with `push()`, `page/settings.js`'s Refresh
-  action would leave a second, stale collection instance sitting underneath, requiring two
-  back-presses to actually leave the collection area.
+- **Settings icon**, where shown, is always the last focusable element and opens
+  `page/settings` via **`replace()`, not `push()`** — this page is destroyed, not paused,
+  while Settings is open. `page/settings.js` is where collection maintenance actions
+  (refresh / mint / unlink) live — see §4.8 — not on this page. The `replace()` choice
+  (rather than the `push()` every other "open a sub-screen" transition in this app uses)
+  exists purely to guarantee there is never more than one `page/collection.js` instance in
+  the navigation stack at a time — see §4.8 and §6 for why: with `push()`,
+  `page/settings.js`'s Refresh action would leave a second, stale collection instance
+  sitting underneath, requiring two back-presses to actually leave the collection area. For
+  the same reason, `page/settings.js`'s `unlinkWallet()` now also `replace()`s back to
+  `page/collection` (it used to target the now-deleted `page/nolink`) — this file's own
+  `build()` logic picks the right state up from there.
 - **`consumeRefreshRequest()` — cross-page refresh signal, checked at the top of
   `build()`**: reads `AppStorage.getRecord(STORAGE_KEYS.COLLECTION_REFRESH)`. If truthy, it
-  immediately clears the flag, runs `setScreenState(SCREEN_LOADING)` + `getCollection()`
-  (a real `GET_COLLECTION` network round-trip, never `loadStoredCollection()`/the local
-  cache), and `build()` returns early — skipping the normal cache-first branch below
+  immediately clears the flag, runs `setScreenState(SCREEN_LOADING)` + `refreshWithLinkCheck()`
+  (see below), and `build()` returns early — skipping the normal cache-first branch below
   entirely. This is how `page/settings.js`'s "Refresh" button actually triggers a refresh
-  (see §4.10 and §6): it does not call the network itself, it sets this flag and navigates
+  (see §4.8 and §6): it does not call the network itself, it sets this flag and navigates
   with `replace()` back to `page/collection`, forcing a brand-new instance whose `build()`
   picks the flag up. **This must be checked in `build()`, not in an `onResume()`/`onPause()`
   pair** — see §6: the device `Page` API has no such hooks, so nothing short of destroying
   and recreating the page will ever run code again on "back". The flag is otherwise never
   true (only `refreshCollection()` in `page/settings.js` writes it), so this check is a
   no-op on every normal cold `build()`.
+- **`refreshWithLinkCheck()`** — only reachable via `consumeRefreshRequest()`, i.e. only on
+  an explicit "Обновить" from Settings, never on a normal cold `build()`. Calls
+  `WatchApi.linkStatus(page)` (`LINK_STATUS`, the same companion method `page/link.js`
+  uses, §4.5) *before* touching the collection at all. Why: unlinking a device from the
+  *website's* side (as opposed to this watch's own Unlink, §4.8) doesn't necessarily change
+  what `GET_COLLECTION` reports on its own, so a plain refresh could silently keep showing a
+  stale "linked" collection forever. On `d.link === 'linked'`, proceeds to the normal
+  `getCollection()`. On any other `d.link` value, treats it as genuinely unlinked: writes
+  `STORAGE_KEYS.LINKED = false`, clears `STORAGE_KEYS.COLLECTION_JSON`, and goes straight to
+  `SCREEN_NOT_LINKED` — without ever calling `GET_COLLECTION`. A backend-reported
+  `d.status === 'ERROR'`, or the request promise rejecting outright (BLE/transport
+  failure), is deliberately **not** treated as "unlinked" — both fall back to the normal
+  `getCollection()` call, which has its own error surface (`SCREEN_ERROR`); only a clean,
+  non-error response that isn't `'linked'` triggers the local unlink.
 
-### 4.5 `page/nolink.js` — Collection access gate
-- **Role**: shown instead of `page/collection` when `STORAGE_KEYS.LINKED` is falsy (routed
-  from `page/index.executeAction()`).
-- **Menu**: "Details" → `page/linkinfo` (via `replace`, fires `CTA.OPEN_COLLECTION_HELP` —
-  see §5.6), "Link" → `page/link` (via `replace`, with `params.url = AppStorage.getLinkUrl()`,
-  fires `CTA.OPEN_LINK_QR`).
-- **Rule — background re-check**: on `build()`, if `STORAGE_KEYS.LINKED` is already true it
-  `replace()`s straight to `page/collection`; otherwise it fires `GET_COLLECTION` in the
-  background (`checkLinkInBackground()`, guarded by `state.checking` against overlap) so
-  that a link made on the website while the nolink screen is open gets picked up without
-  user action. On success (`status === "OK"`) it fires `CTA.LINKED` (§5.6 — this is the
-  "link confirmed without the user ever opening `page/link`" detection path), sets
-  `LINKED=true`, caches the collection, and — **only if the page is still the visible one**
-  (`state.visible`) — replaces to `page/collection`. **This file also defines
-  `onResume()`/`onPause()` to keep `state.visible` in sync, intending the same background
-  re-check to re-run every time the page is revisited — but per §6, the device `Page` API
-  has no `onResume`/`onPause` hooks at all, so neither ever fires.** `state.visible` is set
-  once in `build()` and then never changes; the guard it feeds
-  (`if (this.state.visible) replace(...)` inside `checkLinkInBackground()`'s success
-  handler) is therefore always checking a value that was fixed at construction time. In
-  practice this doesn't break the page — the one `build()`-time check still runs and still
-  works — it just means "re-check every time you come back to this screen" never actually
-  happens. Still a live, un-fixed platform limitation; not touched by this update.
-- **`GET_COLLECTION` field contract**: reads `{ status: "OK" | "NO_LINK", collection }` —
-  the **same** field name `page/collection.js` reads (`data.status`). Resolved: this file
-  used to read `data.result` instead, the opposite of `collection.js`'s convention and of
-  the companion's own `{status:'ERROR', ...}` exception shape (§7); it's now aligned with
-  both.
-
-### 4.6 `page/link.js` — Wallet linking flow
+### 4.5 `page/link.js` — Wallet linking flow
 - **Role**: QR-based device↔wallet pairing, driven entirely through `utils/watch-api.js`
   (`WatchApi.linkStart/linkStatus/linkConfirm/linkReject`) — this is the **only** page that
   goes through the `WatchApi` abstraction rather than calling `this.request` directly (see
@@ -343,13 +364,7 @@ should be treated as the project's *de facto* interaction contract:
 - Network/BLE errors at every step degrade to `showDone(false, err_internet_connection)`
   rather than crashing the polling loop.
 
-### 4.7 `page/linkinfo.js` — Static "why link" explainer
-- Single vertically-scrollable page (title, divider, body text, one CTA button). No key
-  navigation, no state machine — relies on ZeppOS's default free-scroll behavior.
-- CTA fires `CTA.OPEN_COLLECTION_QR` (§5.6), then pushes `page/link` with
-  `{ url: AppStorage.getLinkUrl() }`.
-
-### 4.8 `page/help.js` — Generic help slideshow
+### 4.6 `page/help.js` — Generic help slideshow
 - **Contract**: takes `params = JSON.stringify({ slides })` where each slide is
   `{ titleKey, textKey, action?: { labelKey, url, full?, ref? } }`. Used by `page/index`
   (`SLIDES_MAIN`) and `page/practice` (`DEEP_PRACTICE`). (`page/practiceintro.js`'s onboarding
@@ -365,7 +380,7 @@ should be treated as the project's *de facto* interaction contract:
 - **If `slides` is empty/missing, `build()` logs an error and renders nothing** — no
   fallback UI.
 
-### 4.9 `page/qr.js` — Generic "scan to open URL" screen
+### 4.7 `page/qr.js` — Generic "scan to open URL" screen
 - **Contract**: `params = JSON.stringify({ url, full?, ref? })`; `url` defaults to the
   website root if absent/unparsable, `full` toggles a QR-only fullscreen layout (hides
   title/intro/body text, used by the Go deeper slide — §4.2), `ref` is an optional
@@ -387,7 +402,7 @@ should be treated as the project's *de facto* interaction contract:
 - Renders a `QRCODE` widget + (outside fullscreen) title/intro/domain/body text + a Back
   button (`back()`).
 
-### 4.10 `page/settings.js` — Collection maintenance actions
+### 4.8 `page/settings.js` — Collection maintenance actions
 - **Role**: the wallet/collection "settings" hub, reached from `page/collection.js`'s
   help/settings icon (see §4.4) regardless of whether the collection is currently empty,
   linked, or not linked. Always shows the same three actions — this page does not branch
@@ -399,9 +414,10 @@ should be treated as the project's *de facto* interaction contract:
   are intentionally not merged into a single label the way the (now-removed)
   `page/collection.js` action-card prototype briefly did. Sections stack top-down under
   the title using a running Y cursor sized from `getTextLayout()` (the same
-  measure-then-place pattern `page/linkinfo.js` uses). There is no physical up/down/select
-  *cycling* between the three buttons — they remain touch/`click_func`-only, like
-  `page/link.js`'s confirm/cancel or `page/linkinfo.js`'s CTA.
+  measure-then-place pattern `page/practiceintro.js` §4.1a uses). There is no physical
+  up/down/select *cycling* between the three buttons — they remain touch/`click_func`-only,
+  like `page/link.js`'s confirm/cancel or `page/collection.js`'s not-linked/Mint buttons
+  (§4.4).
 - **Hardware-key handling exists on this page for exactly one purpose: leaving it.**
   `page/collection.js` reaches this page via `replace()`, not `push()` (see §4.4), so
   there is nothing paused underneath to fall back to — the default hardware-back action
@@ -420,9 +436,11 @@ should be treated as the project's *de facto* interaction contract:
      `replace({url: "page/collection"})`, which destroys this settings instance and forces
      a **brand-new** `page/collection.js` instance through a fresh `onInit`/`build()`.
      That new instance's `build()` calls `consumeRefreshRequest()` first (see §4.4), which
-     finds the flag, clears it, and runs the same `SCREEN_LOADING` → `GET_COLLECTION` →
-     render cycle the collection page already uses on a cold fetch — same loading
-     animation, real network call, never the local cache. `replace()` (not `back()`) is
+     finds the flag, clears it, and runs `SCREEN_LOADING` → `refreshWithLinkCheck()` — a
+     `LINK_STATUS` check first, `GET_COLLECTION` only if that confirms the link is still
+     live (§4.4) — rather than the plain `GET_COLLECTION` a cold fetch uses; this is the one
+     path through this page that can detect a link removed from the *website* side (§4.4).
+     Same loading animation either way, never the local cache. `replace()` (not `back()`) is
      required here: see §6 — the device `Page` API has no `onResume`, so returning to an
      already-alive collection instance via `back()` runs no code at all (tried first;
      silently did nothing — the reason both this rule and §6's platform note exist).
@@ -446,11 +464,12 @@ should be treated as the project's *de facto* interaction contract:
      (`confirmUnlink()`) hides both and calls `unlinkWallet()`, which is otherwise unchanged:
      calls `WatchApi.unlink(page)` → companion method `UNLINK` → backend
      `POST /device/unlink`. On `{status: "OK"}`: sets `STORAGE_KEYS.LINKED = false`, clears
-     `STORAGE_KEYS.COLLECTION_JSON`, and `replace()`s to `page/nolink` (mirrors the
-     link-established transition `page/nolink.js` already does in reverse; unlike Refresh,
-     this one *does* replace rather than signal-and-back, since there is no "previous
-     collection screen" state to resume into — the destination is a different page
-     entirely). On any other response or a network error: logged, and the normal Unlink
+     `STORAGE_KEYS.COLLECTION_JSON`, and `replace()`s to `page/collection` — a fresh instance
+     of which reads the just-cleared flag in its own `build()` and renders its
+     `SCREEN_NOT_LINKED` state (§4.4); unlike Refresh this still *replaces* rather than
+     signal-and-back, for the same "force a fresh `build()`" reason (§6), even though the
+     destination is the same page by name this time. On any other response or a network
+     error: logged, and the normal Unlink
      button is made visible again so the user has something to retap — without this, the
      confirm/cancel pair stays hidden after a failed attempt and the section would show
      nothing actionable at all. `state.busy` guards Unlink against overlapping double-taps
@@ -474,8 +493,8 @@ should be treated as the project's *de facto* interaction contract:
 
 ### 5.1 Constants (`utils/config/constants.js`)
 - Colors: `NORMAL_COLOR 0x2C2C2C`, `PRESSED_COLOR 0x4A4A4A`, `ERROR_COLOR 0xCC3344` — the
-  shared gray/error palette used by `page/index.js`, `page/collection.js`, `page/nolink.js`,
-  and `page/settings.js`. `page/practice.js` uses a *separate*, distinctly-named blue
+  shared gray/error palette used by `page/index.js`, `page/collection.js`, and
+  `page/settings.js`. `page/practice.js` uses a *separate*, distinctly-named blue
   palette instead (`PRACTICE_NORMAL_COLOR`/`PRACTICE_PRESSED_COLOR`/`PRACTICE_SELECTED_COLOR`,
   plus `SECONDARY_BUTTON_HEIGHT`) exported from the per-shape
   `zosLoader:./index.[pf].layout.js` files — not an override of this module's constants, a
@@ -487,8 +506,10 @@ should be treated as the project's *de facto* interaction contract:
 - `WEBSITE_URL = "https://mandala.garageno9.site"`.
 - `CTA`: the funnel-attribution label enum — see §5.6 for the full list and firing sites.
 - `STORAGE_KEYS`: `INSTALL_ID, MANDALA_DAY, MANDALA_PATH, STREAK_DAYS, BEST_STREAK,
-  COLLECTION_JSON, LINKED, LAST_NEWS, COLLECTION_REFRESH, PRACTICE_INTRO_SEEN`.
-  `PRACTICE_INTRO_SEEN` gates `page/practiceintro.js` (§4.1a) — checked in `page/index.js`
+  COLLECTION_JSON, LINKED, LAST_NEWS, COLLECTION_REFRESH, PRACTICE_INTRO_SEEN`. `LINKED` is
+  now read and written exclusively by `page/collection.js` (§4.4) — it used to be shared
+  with the now-deleted `page/nolink.js`. `PRACTICE_INTRO_SEEN` gates `page/practiceintro.js`
+  (§4.1a) — checked in `page/index.js`
   (§4.1), but only *written* on `page/practiceintro.js`'s own "Начать практику" button, and
   only if its "don't show again" checkbox was ticked; never cleared once set. (A
   `VIEW_COUNTER` key used
@@ -496,7 +517,7 @@ should be treated as the project's *de facto* interaction contract:
   the whole mechanism — `AppStorage.addCounter()`/`getCounter()`, the write-site in
   `page/show.js`, the key itself — has been deleted, see §4.2.) `COLLECTION_REFRESH` is the
   odd one out: it's not really "data" like the others, it's a one-shot cross-page signal (see
-  §4.4/§4.10) — written `true` by `page/settings.js`, read-and-cleared at the top of
+  §4.4/§4.8) — written `true` by `page/settings.js`, read-and-cleared at the top of
   `page/collection.js`'s `build()` (`consumeRefreshRequest()`). It happens to use the same
   persistent-storage mechanism as everything else here only because that's the one
   shared-state channel this app has between page instances (see §5.2's "generic key/value
@@ -589,12 +610,12 @@ Each wraps `page.request({ method, request: { ...Profile.createRequestData(), ..
 A code comment (`// сюда же со временем: getMandala, getNews, getCollection`) states the
 intent to migrate the other request call sites onto this wrapper — **as of now that
 migration has not happened**; `page/index.js`, `page/practice.js` (indirectly via
-`page/show.js`), `page/collection.js`, and `page/nolink.js` all still call
+`page/show.js`), and `page/collection.js` all still call
 `this.request(...)` directly with a hand-assembled payload. `unlink` is the one new
 exception: `page/settings.js`'s `unlinkWallet()` goes through `WatchApi.unlink(page)`
 rather than adding another direct-call site, per this section's own guidance.
 `page/settings.js`'s `refreshCollection()` calls **neither** — it makes no network request
-of its own at all (see §4.10/§4.4: it signals `page/collection.js` via a storage flag and
+of its own at all (see §4.8/§4.4: it signals `page/collection.js` via a storage flag and
 lets that page do the fetch). Any further new call site should follow `unlink`'s example,
 not the older ones.
 
@@ -603,10 +624,13 @@ Two independent, additive mechanisms track how users move toward the website/min
 neither depends on the other.
 
 - **`ref` query param (`page/qr.js`)**: every help-slide action in `page/index.js SLIDES_MAIN`
-  and `page/practice.js DEEP_PRACTICE` (§4.8), plus `page/settings.js`'s
-  `openMint()`, carries a `ref` string alongside `url`. `page/help.js` forwards it unchanged
-  into `page/qr.js`'s params; `qr.js` appends it to the URL encoded in the QR (`withRef()` —
-  §4.9). Current values: `help_main`, `deep_practice`, `settings_mint`. This lets the
+  and `page/practice.js DEEP_PRACTICE` (§4.6), `page/settings.js`'s `openMint()`, and
+  `page/collection.js`'s empty-state Mint button (§4.4) each carry a `ref` string alongside
+  `url`. `page/help.js` forwards its copy unchanged into `page/qr.js`'s params; `qr.js`
+  appends it to the URL encoded in the QR (`withRef()` — §4.7). Current values: `help_main`,
+  `deep_practice`, `settings_mint`, `collection_mint` — the last two both land on the mint
+  QR but are tagged separately so the site can tell "opened via Settings" apart from
+  "opened right from an empty collection." This lets the
   *website* attribute a scan to the specific in-app entry point that produced it, purely via
   its own access logs — nothing is sent back to the watch/companion for this.
 - **`CTA_EVENT` companion method** (`utils/watch-api.js WatchApi.sendCtaEvent(page, cta)` →
@@ -625,12 +649,15 @@ neither depends on the other.
   | `OPEN_MAIN_HELP` | `page/index.js` `executeAction()` | Help icon activated on the main menu |
   | `OPEN_DAILY_HELP` | `page/practiceintro.js` `build()` | the onboarding screen shown (§4.1a) — fires on every repeat showing, not just the first |
   | `OPEN_DEEPER` | `page/practice.js` `openDeep()` | the Help-styled icon on Practice activated — unconditional now, no view-count gate (§4.2) |
-  | `OPEN_COLLECTION_HELP` | `page/nolink.js` `openDetails()` | "Details" tapped on the no-link gate |
-  | `OPEN_LINK_QR` | `page/nolink.js` `openLinkQr()` | "Link" tapped on the no-link gate |
-  | `OPEN_COLLECTION_QR` | `page/linkinfo.js` CTA button | "Details on website" tapped |
+  | `OPEN_LINK_QR` | `page/collection.js`'s not-linked button (§4.4) | the one button on the not-linked state tapped — moved here from the deleted `page/nolink.js`, same meaning |
   | `OPEN_QR` | `page/qr.js` `build()` | any open of the generic QR screen |
   | `CONFIRM_LINK` | `page/link.js` `confirm()` | "Confirm" tapped on the wallet-confirmation screen |
-  | `LINKED` | `page/link.js` `showDone(true, …)`; `page/nolink.js` `checkLinkInBackground()` on `status === "OK"` | device confirms the wallet link succeeded — two independent detection paths (via `page/link.js`, or discovered already-linked in the background from `page/nolink.js`) |
+  | `LINKED` | `page/link.js` `showDone(true, …)`; `page/collection.js` `checkLinkInBackground()` on `status === "OK"` (§4.4) | device confirms the wallet link succeeded — two independent detection paths |
+
+  **Removed**: `OPEN_COLLECTION_HELP` and `OPEN_COLLECTION_QR` — both only ever fired on the
+  now-deleted `page/nolink.js`'s "Details" step and `page/linkinfo.js`'s own CTA button;
+  with that two-step "learn more, then link" flow gone (§4.4), neither label has anywhere
+  left to fire from.
 
   Together these give a step-by-step funnel: entry CTA tapped → reached a QR screen (`ref`
   identifies which one) → (link flow only) confirmed → linked. **Not instrumented:**
@@ -648,21 +675,25 @@ them deliberately (in the spec first) rather than by accident.
 
 > **Resolved since the last pass** (kept here only as a pointer to where the current
 > behavior is now documented, not as open items): round-build `SyntaxError` → §2.1;
-> square-layout missing color exports → §2.1; `GET_COLLECTION` field-name mismatch between
-> `page/collection.js`/`page/nolink.js` → §4.5; `ScheduleNotification` inverted guard → §4.1.
+> square-layout missing color exports → §2.1; `ScheduleNotification` inverted guard → §4.1.
+> The `GET_COLLECTION` field-name mismatch this used to point at was between
+> `page/collection.js` and `page/nolink.js` specifically — moot now that `page/nolink.js`
+> is deleted and its role absorbed into `page/collection.js` (§4.4), which obviously agrees
+> with itself.
 
 0. **Two request-calling conventions coexist.** `WatchApi` (link methods, `unlink`, and
    `sendCtaEvent` — see §5.5/§5.6) vs. ad-hoc
    `this.request({ method, request: {...Profile.createRequestData(), ...} })` (everything
    else: `GET_MANDALA`/`OPEN_MANDALA` via `page/show.js`, `GET_COLLECTION` via
-   `page/collection.js`/`page/nolink.js`, `GET_NEWS` via `page/index.js`). Not a bug, but an
-   acknowledged half-finished refactor — see §5.5.
-1. **Selection/focus list pattern is duplicated three times** with small variations
-   (`page/index.js`, `page/collection.js`, `page/nolink.js` each define their own
-   `updateSelection`/`attachSelectable`/key-nav wiring instead of sharing one component).
-   Functionally consistent today; a shared helper would reduce future drift. (`page/practice.js`'s
-   two-way focus toggle — §4.2 — is a related but distinct interaction model: a single
-   toggled index with contour-color focus, not a list of rows; not folded into this item.)
+   `page/collection.js`, `GET_NEWS` via `page/index.js`). Not a bug, but an acknowledged
+   half-finished refactor — see §5.5.
+1. **Selection/focus list pattern is duplicated** with small variations (`page/index.js`
+   and `page/collection.js` each define their own `updateSelection`/`attachSelectable`/
+   key-nav wiring instead of sharing one component — a third copy on the now-deleted
+   `page/nolink.js` is gone with it). Functionally consistent today; a shared helper would
+   reduce future drift. (`page/practice.js`'s two-way focus toggle — §4.2 — is a related
+   but distinct interaction model: a single toggled index with contour-color focus, not a
+   list of rows; not folded into this item.)
 2. **Four separate, unused TGA-thumbnail resizer implementations** exist in `utils/`
    (`TgaThumbnail.js`, `IndexedTgaThumbnail.js`, `ImageResizer.js`, `HardcoreResizer.js`),
    none imported anywhere. They read as successive iterations on the same idea (byte-level
@@ -674,7 +705,7 @@ them deliberately (in the spec first) rather than by accident.
 3. **`device.js getLocale()` is unused** (§5.3) — kept for a possible future need to
    branch on locale directly rather than through `getText`.
 4. **`page/settings.js` does not verify `STORAGE_KEYS.LINKED` before offering
-   Refresh/Unlink** (§4.10) — a deliberate choice (the flag can go stale any time the link
+   Refresh/Unlink** (§4.8) — a deliberate choice (the flag can go stale any time the link
    state changes outside this device's knowledge, and every action there is
    self-correcting), not an oversight.
 5. **Ambient/global companion APIs.** `app-side/index.js` uses `Logger`, `fetch`,
@@ -688,25 +719,27 @@ them deliberately (in the spec first) rather than by accident.
     file.) `@zeppos/zml/base-page.js`'s `BasePage` wrapper will happily accept and wire up
     an `onResume`/`onPause` option if you pass one — its own type declarations even list
     them as part of `ILifeCycle` — but the underlying native `Page()` constructor never
-    calls them back, so they are silently never invoked. Two consequences:
-    - `page/nolink.js` defines `onResume()`/`onPause()` to keep `state.visible` accurate
-      and to re-run its link-status background check every time the page is revisited (see
-      §4.5). Neither has ever fired. This is a pre-existing latent bug, not something
-      introduced by later work — the page still functions because the one `build()`-time
-      check it does is correct, it just never repeats.
-    - `page/collection.js`'s refresh signal (§4.4/§4.10) was originally built the same way
+    calls them back, so they are silently never invoked. Concrete history:
+    - The now-deleted `page/nolink.js` used to define `onResume()`/`onPause()` to keep a
+      `state.visible` flag accurate and to re-run its link-status background check every
+      time the page was revisited. Neither ever fired — a pre-existing latent bug, harmless
+      only because the one `build()`-time check it did was correct on its own; "re-check
+      every time you come back" never actually happened. Moot now that the file is gone,
+      but the lesson it taught is exactly why `page/collection.js`'s own equivalent check
+      (`checkLinkInBackground()`, §4.4) is written the way it is below.
+    - `page/collection.js`'s refresh signal (§4.4/§4.8) was originally built the same way
       (flag + `back()` + `onResume()`) and, for the same reason, silently did nothing: the
       user reports "back happens, no animation, no request" was the direct symptom of this
       platform fact. The fix moved the check into `build()` and switched the triggering
       navigation from `back()` to `replace()`, since `replace()` is the one primitive in
-      this app guaranteed to force a fresh `onInit`/`build()` cycle (already relied on
-      elsewhere: `page/nolink.js`'s own forward transitions, `page/settings.js`'s
-      `unlinkWallet()`). **Going forward: never rely on `onResume`/`onPause` on a device
-      `Page` for anything. If a page needs to react to "the user came back to me," the only
-      working approaches are (a) check state at the top of `build()` and force a fresh
-      instance via `replace()`, as `page/collection.js` now does, or (b) a background poll
-      while the *current* page is different (as `page/nolink.js`'s `checkLinkInBackground`
-      does, correctly, from `build()`).**
+      this app guaranteed to force a fresh `onInit`/`build()` cycle. **Going forward: never
+      rely on `onResume`/`onPause` on a device `Page` for anything. If a page needs to react
+      to "the user came back to me," the only working approaches are (a) check state at the
+      top of `build()` and force a fresh instance via `replace()`, as `page/collection.js`
+      does for its refresh signal, or (b) a background poll while the *current* page is
+      different — `page/collection.js`'s own `checkLinkInBackground()` does exactly this
+      from `build()` when it's in the not-linked state (§4.4), the same shape the deleted
+      `page/nolink.js` used to use for the same purpose.**
 7. **`page/settings.js`'s per-action button colors are mostly dead data.**
     `renderActions()` still builds an `actions` array with a distinct
     `normalColor`/`pressColor` per entry (gray for Refresh, blue for Mint, red for Unlink —
@@ -716,8 +749,8 @@ them deliberately (in the spec first) rather than by accident.
     reads commented out at that call site (`normal_color: NORMAL_COLOR,
     //action.normalColor`). Refresh and Mint render identically to each other and always
     have. Unlink is the one exception now: its `normalColor`/`pressColor` are read live by
-    its hidden Confirm button (§4.10) — not dead for that entry, just never used for the
-    *normal*-state Unlink button itself. See §4.10.
+    its hidden Confirm button (§4.8) — not dead for that entry, just never used for the
+    *normal*-state Unlink button itself. See §4.8.
 
 ---
 
@@ -771,11 +804,10 @@ Single `onRequest(req, res)` router keyed on `req.method`:
 ## 9. Remaining Unknowns (external to this repo)
 
 - The actual JSON shapes returned by the live backend
-  (`mandala.garageno9.site/api/watch/...`) are not fully verifiable from this codebase. The
-  `GET_COLLECTION` field-name question (formerly tracked here) is resolved on the watch
-  side — both `page/collection.js` and `page/nolink.js` read `data.status` now — but
-  whether the *backend* actually sends `status` (rather than, say, both watch pages having
-  agreed on the wrong one) is still unconfirmed independently of this repo.
+  (`mandala.garageno9.site/api/watch/...`) are not fully verifiable from this codebase.
+  `page/collection.js` (the only watch-side reader of `GET_COLLECTION` now, §4.4) reads
+  `data.status`; whether the *backend* actually sends that field is still unconfirmed
+  independently of this repo.
 - `GET_NEWS`'s `news[]` items are specified (by the person operating the backend) to carry
   `{ date, title, body }` once populated; not independently observed from a live non-empty
   response from this repo.
@@ -784,3 +816,8 @@ Single `onRequest(req, res)` router keyed on `req.method`:
   request fires, not what comes back.
 - No test suite exists (`package.json test` script is the CRA/npm-init placeholder that
   just exits with an error).
+- `page/collection.js`'s `refreshWithLinkCheck()` (§4.4) assumes `LINK_STATUS` reliably
+  reports `d.link !== 'linked'` once a device-side link is removed from the *website*
+  (as opposed to this watch's own Unlink). Whether `/device/link-status` actually reflects
+  a website-initiated unlink, and how promptly, is unconfirmed independently of this repo —
+  the whole feature is built on that assumption holding.

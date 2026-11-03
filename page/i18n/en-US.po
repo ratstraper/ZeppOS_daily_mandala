@@ -2,7 +2,7 @@ msgid "app_name"
 msgstr "Daily Mandala"
 
 msgid "practice"
-msgstr "Today"
+msgstr "Practice"
 
 msgid "global_help_title"
 msgstr "Help"
@@ -14,9 +14,8 @@ msgid "collection"
 msgstr "Collection"
 
 // practice page
-
 msgid "practice_subtitle"
-msgstr "A daily mandala for meditation"
+msgstr "Daily Mandala for meditation"
 
 msgid "loading_mandala"
 msgstr "Determining the day's energy"
@@ -28,47 +27,48 @@ msgid "not_yet_today"
 msgstr "Not yet today"
 
 msgid  "err_connection_to_the_phone"
-msgstr "Error connecting\nto the phone"
+msgstr "Error connecting to the phone.\nWatch isn't connected to the phone.\nCheck Bluetooth, launch the Zepp app, and wait for synchronization"
 
 msgid "err_internet_connection"
-msgstr "Сеть недоступна.\nПроверьте подключение\nтелефона к интернету\nи повторите."
+msgstr "Network unavailable.\nCheck your phone's internet connection and try again."
 
 msgid "streak"
-msgstr "Streak" //Longest streak:
+msgstr "Streak"
 
 msgid "best"
 msgstr "Best"
 
 // general help
 msgid "help_main_slide1_title"
-msgstr "Daily Practice"
+msgstr "Practice"
 
 msgid "help_main_slide1_text"
-msgstr "Practice is open to everyone.\n\nEvery day brings a new mandala based on today's date.\n\nUse it for a short daily ritual and keep your practice journal."
+msgstr "Daily Mandala changes every day and is open to everyone.\n\nYou can use it for a short daily meditation or just look at it as an art object."
 
 msgid "help_main_slide2_title"
-msgstr "Personal Collection"
+msgstr "Collection"
 
 msgid "help_main_slide2_text"
-msgstr "Collection shows your personal mandalas as on-chain NFTs.\n\nA birth date or another meaningful date can exist in one copy only.\n\nEach mandala belongs to one owner."
+msgstr "Your meaningful dates, minted as unique Mandala NFTs. Their images reflect specific dates, so they remain unchanged and are visible only to you on your watch."
 
 msgid "help_main_slide3_title"
-msgstr "Claim Yours"
+msgstr "Start your Collection"
 
 msgid "help_main_slide3_text"
-msgstr "Mint your personal mandala on the website.\n\nConnect your wallet, link it with your watch, and unlock your collection."
+msgstr "To mint unique Mandala NFTs for your personal Collection:\nConnect your wallet, mint your Mandala, then link your wallet to your watch."
 
 msgid "help_main_slide3_action"
-msgstr "Scan to mint & link"
+msgstr "Visit the website"
 
 msgid "label_next"
 msgstr "Next →"
 
 msgid "help_qr_title"
-msgstr "Mint & Link"
+msgstr "Scan"
 
+//Scan with your phone to open the website.
 msgid "help_qr_intro"
-msgstr "Scan with your phone to open the website."
+msgstr "to visit the website"
 
 msgid "help_qr_domain"
 msgstr "mandala.garageno9.site"
@@ -81,17 +81,21 @@ msgstr "Back"
 
 
 //practice help
-msgid "help_practice_slide1_title"
+msgid "about_practice_slide_title"
 msgstr "Daily Practice"
 
-msgid "help_practice_slide1_text"
-msgstr "Each day has its own reflection\nin Mandala.\n\nOpen it. Look into it.\nBreathe with it.\nEven 3 minutes is enough."
+msgid "about_practice_slide_text"
+msgstr "Each day has its own reflection in Mandala.\n\nOpen it. Let your gaze flow through the lines, colors, and patterns from edge to center and back. Breathe with it.\nObserve your current state.\nEven 3 minutes is enough."
 
-msgid "help_practice_slide2_title"
-msgstr "Focus method"
 
-msgid "help_practice_slide2_text"
-msgstr "Look from edge to center\nand back.\nLet your gaze flow through\nthe lines, colors, and patterns\nfor 3 mins.\nObserve your current state."
+msgid "about_practice_slide_title2"
+msgstr "Track your"
+
+msgid "about_practice_slide_text2"
+msgstr "Streak - your current series of daily practises.\nBest - your personal record in streaks."
+
+msgid "practice_intro_dont_show_again"
+msgstr "Don't show again"
 
 msgid "help_practice_slide3_title"
 msgstr "Notice your"
@@ -100,20 +104,19 @@ msgid "help_practice_slide3_text"
 msgstr "Streak - your current series\nof daily sessions.\n\nBest - your personal record\nof streak."
 
 msgid "help_practice_slide3_action"
-msgstr "Start practicing →"
+msgstr "Start"
 
-msgid "practice_intro_dont_show_again"
-msgstr "Don't show this screen again"
+
 
 //deep practice help
 msgid "deep_button"
 msgstr "Go deeper"
 
 msgid "deep_practice_slide1_title"
-msgstr "Go deeper"
+msgstr "Go Deeper"
 
 msgid "deep_practice_slide1_text"
-msgstr "Daily Mandala helps\nyou build the habit.\n\nYour Birth Mandala makes\nthe practice personal."
+msgstr "Daily Mandala helps you build the habit.\n\nYour Birth Mandala makes the practice personal."
 
 msgid "deep_practice_slide1_action"
 msgstr "Learn more →"
@@ -122,31 +125,22 @@ msgid "deep_practice_slide2_title"
 msgstr "One Date"
 
 msgid "deep_practice_slide2_text"
-msgstr "A day that changed\nyour life:\nYour birthday or any\nmeaningful date.\nIt may still be unclaimed."
+msgstr "A day that changed your life: your birthday or any meaningful date can be captured in a unique pattern of that day."
 
 msgid "deep_practice_slide3_title"
 msgstr "One Mandala"
 
 msgid "deep_practice_slide3_text"
-msgstr "Every calendar date has\nexactly one Mandala.\nOnce minted, that date \nis gone forever."
+msgstr "Every calendar date has exactly one Mandala NFT. It can become yours and no one can mint a second Mandala for the same date."
 
 msgid "deep_practice_slide4_title"
 msgstr "One Owner"
 
 msgid "deep_practice_slide4_text"
-msgstr "Only one person\ncan own each date.\n\nIf it's yours,\nit stays yours forever.\nWill it be you?"
+msgstr "Only one person can own it at a time.\nCheck on the website if your date is still available and mint your Mandala."
 
 msgid "deep_practice_slide4_action"
 msgstr "Check your date →"
-
-msgid "deep_practice_slide5_title"
-msgstr "Make it you"
-
-msgid "deep_practice_slide5_text"
-msgstr "Mint your Birth Mandala\non the website.\n\nLink your wallet to see\nit in your Collection."
-
-msgid "deep_practice_slide5_action"
-msgstr "Scan to continue →"
 
 ///////////////
 msgid "month_january"
@@ -191,13 +185,7 @@ msgstr "?"
 msgid "settings"
 msgstr "Settings"
 
-// nolink screen
-msgid "no_link_title"
-msgstr "No Link"
-
-msgid "no_link_details"
-msgstr "Details"
-
+// collection screen: not-linked state
 msgid "no_link_link"
 msgstr "Link"
 
@@ -206,9 +194,6 @@ msgstr "Mandala on Your Wrist"
 
 msgid "no_link_help_text"
 msgstr "If you own one or more NFTs from the Soul Mandala collection, you can link them to your watch. They will then be available on your wrist at any time.\n\nFollow the link to the website, confirm ownership of the wallet holding the NFTs from the collection, and your mandalas will appear on your watch in the Collection section."
-
-msgid "no_link_help_action"
-msgstr "Details on website"
 
 // collection page
 msgid "loading"

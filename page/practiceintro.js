@@ -22,9 +22,8 @@ const vibrator = new Vibrator();
  */
 
 const SLIDES = [
-  { titleKey: "help_practice_slide1_title", textKey: "help_practice_slide1_text" },
-  { titleKey: "help_practice_slide2_title", textKey: "help_practice_slide2_text" },
-  { titleKey: "help_practice_slide3_title", textKey: "help_practice_slide3_text" },
+  { titleKey: "about_practice_slide_title", textKey: "about_practice_slide_text" },
+  { titleKey: "about_practice_slide_title2", textKey: "about_practice_slide_text2" },
 ];
 
 const UI = {
@@ -86,6 +85,9 @@ Page(
     build() {
       logger.log(`PRACTICEINTRO.JS`);
       WatchApi.sendCtaEvent(this, CTA.OPEN_DAILY_HELP).catch(() => {});
+
+      // Весь экран длиннее дисплея - сигнализируем, что можно скроллить вниз
+      hmUI.createWidget(hmUI.widget.PAGE_SCROLLBAR, {});
 
       const contentW = width - UI.padX * 2;
       let y = UI.topY;

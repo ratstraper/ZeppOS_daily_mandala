@@ -1,6 +1,7 @@
 import * as hmUI from "@zos/ui";
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
+import { Vibrator } from "@zos/sensor";
 import { push, replace } from "@zos/router";
 import { scrollTo } from '@zos/page';
 import { onKey, offKey, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_EVENT_CLICK } from '@zos/interaction';
@@ -8,33 +9,32 @@ import { BasePage } from "@zeppos/zml/base-page";
 import AppStorage from '../utils/config/storage.js';
 import Profile from "../utils/config/profile.js";
 import LoadingAnimationComponent from '../utils/components/LoadingAnimationComponent.js';
-import { NORMAL_COLOR, PRESSED_COLOR, COLLECTION_SHOW, STORAGE_KEYS } from "../utils/config/constants.js";
+import { WatchApi } from "../utils/watch-api";
+import { NORMAL_COLOR, PRESSED_COLOR, WEBSITE_URL, COLLECTION_SHOW, STORAGE_KEYS, CTA } from "../utils/config/constants.js";
 
 import { width, height, screenShape, getDateFormatString } from "../utils/config/device.js";
 
 const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
 const SCREEN_ERROR = "SCREEN_ERROR";
+const SCREEN_NOT_LINKED = "SCREEN_NOT_LINKED";
 
 const HELP_ICON_W = px(64);
 const HELP_ICON_H = px(104);
+const BTN_H = px(72);
 
 import { TITLE } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
+const vibrator = new Vibrator();
 
 /**
- * "Первый вход" - нет соединения с кошельком (флаг?)
- *    Уведомление "Нет коллекции" + "вы можете..."
- *    Settings - wallet link on site, FAQ?,
- *
- * Есть связь
- * 1. Нет коллекции - Уведомление "Нет коллекции" и кнопка "Синхронизовать" + Settings (remote link)
- *    Если синхронизация не приносит токены - Сообщение о том, что свою мандалу можно сминтить на сайте и линк на сайт
- *    Если есть коллекция - сохранить локально и отобразить ее + Settings
- * 2. Есть коллекция - отобразить + Settings (Синхронизовать, remote link)
- *
- * На сайте по кошельку вывести список сопряженных устройств с датой последнего обращения и кнопки "разорвать связь"
+ * Единая точка входа в NFT-коллекцию — сама решает, что показать, без
+ * отдельных экранов-шлюзов (прежние page/nolink.js и page/linkinfo.js
+ * удалены, их роли полностью перешли сюда):
+ *  - кошелёк не привязан -> текст no_link_help_title/text + кнопка на QR привязки;
+ *  - привязан, в коллекции есть мандалы -> список + кнопка Settings;
+ *  - привязан, но коллекция пуста -> empty_collection + кнопка Mint + кнопка Settings.
  */
 
 function measureText(text, size, textWidth) {
@@ -43,6 +43,12 @@ function measureText(text, size, textWidth) {
     text_width: textWidth,
     wrapped: 1,
   });
+}
+
+function hapticStrong() {
+  vibrator.stop();
+  vibrator.start(25);
+  setTimeout(() => vibrator.stop(), 180);
 }
 
 Page(
@@ -54,12 +60,14 @@ Page(
       bgRects: [],         // фоны кнопок списка коллекции, для управления цветом
       collectionItems: [],
       helpY: 0,            // фактическая позиция helpImg (нужна scrollToItem)
+      checking: false,     // защита от параллельных фоновых GET_COLLECTION
     },
     widgets: {
       title: null,
 
       loadingGroup: null,
       errorGroup: null,
+      notLinkedGroup: null,
 
       loadingAnim: null,
       loadingText: null,
@@ -67,6 +75,7 @@ Page(
 
       listItems: [],
       emptyText: null,
+      mintButton: null,
       helpImg: null,
     },
 
@@ -77,6 +86,7 @@ Page(
       this.buildTitle();
       this.buildLoadingGroup();
       this.buildErrorGroup();
+      this.buildNotLinkedGroup();
       this.initKeyNavigation();
 
       // Сигнал от page/settings.js ("Обновить"): проверяем и потребляем его
@@ -86,16 +96,21 @@ Page(
       // .claude/specifications.md §6).
       if (this.consumeRefreshRequest()) return;
 
-      const collection = this.loadStoredCollection();
       const linked = AppStorage.getRecord(STORAGE_KEYS.LINKED) || false;
 
+      if (!linked) {
+        // Мгновенно показываем экран привязки, не дожидаясь сети, а в фоне
+        // тихо проверяем - вдруг привязка уже сделана на сайте, а флаг
+        // на часах просто не успел обновиться (как раньше делал nolink.js).
+        this.setScreenState(SCREEN_NOT_LINKED);
+        this.checkLinkInBackground();
+        return;
+      }
+
+      const collection = this.loadStoredCollection();
       if (collection) {
         logger.log('Loading collection from local storage');
         this.setScreenState(SCREEN_RESULT, { collection });
-      } else if (linked) {
-        // Кошелёк привязан, но локальной копии нет - тянем с телефона
-        this.setScreenState(SCREEN_LOADING);
-        this.getCollection();
       } else {
         this.setScreenState(SCREEN_LOADING);
         this.getCollection();
@@ -105,10 +120,39 @@ Page(
     consumeRefreshRequest() {
       if (!AppStorage.getRecord(STORAGE_KEYS.COLLECTION_REFRESH)) return false;
       AppStorage.setRecord(STORAGE_KEYS.COLLECTION_REFRESH, false);
-      logger.log('Collection refresh requested via settings, re-fetching');
+      logger.log('Collection refresh requested via settings, checking link status first');
       this.setScreenState(SCREEN_LOADING);
-      this.getCollection();
+      this.refreshWithLinkCheck();
       return true;
+    },
+
+    // Explicit "Обновить" может быть единственным моментом, когда часы узнают,
+    // что линк был разорван на сайте (не через page/settings.js Unlink) - сам
+    // GET_COLLECTION не обязательно отражает это сразу. Проверяем LINK_STATUS
+    // первым и только при d.link === 'linked' тянем коллекцию; backend-ошибку
+    // или сетевой сбой не считаем за "не привязан" - откатываемся на обычный
+    // getCollection(), который сам покажет ошибку при необходимости.
+    refreshWithLinkCheck() {
+      WatchApi.linkStatus(this)
+        .then((d) => {
+          if (d && d.status === 'ERROR') {
+            logger.log('Refresh: link-status check failed on the backend, falling back to collection check');
+            this.getCollection();
+            return;
+          }
+          if (d && d.link === 'linked') {
+            this.getCollection();
+          } else {
+            logger.log('Refresh: link no longer exists on the site, unlinking locally');
+            AppStorage.setRecord(STORAGE_KEYS.LINKED, false);
+            AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, "");
+            this.setScreenState(SCREEN_NOT_LINKED);
+          }
+        })
+        .catch((err) => {
+          logger.log("Refresh: link-status request failed outright, falling back to collection check", err);
+          this.getCollection();
+        });
     },
 
     // Безопасное чтение коллекции: битый JSON не должен ронять страницу
@@ -186,6 +230,61 @@ Page(
         align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V,
         text: "",
       });
+    },
+
+    // Статичный контент - строится один раз и просто скрывается/показывается,
+    // как loadingGroup/errorGroup. Один CTA: открыть реальный QR привязки
+    // (page/link), без промежуточного "подробнее" экрана.
+    buildNotLinkedGroup() {
+      this.widgets.notLinkedGroup = hmUI.createWidget(hmUI.widget.GROUP, {
+        x: 0, y: 0, w: width, h: height,
+      });
+
+      const padX = px(28);
+      const contentW = width - padX * 2;
+      let y = this.layout.startY;
+
+      const title = i18n("no_link_help_title");
+      const titleLayout = measureText(title, px(32), contentW);
+      this.widgets.notLinkedGroup.createWidget(hmUI.widget.TEXT, {
+        x: padX, y, w: contentW, h: titleLayout.height,
+        color: 0xffffff, text_size: px(32), text_style: hmUI.text_style.WRAP,
+        align_h: hmUI.align.CENTER_H, align_v: hmUI.align.TOP,
+        text: title,
+      });
+      y += titleLayout.height + px(20);
+
+      const text = i18n("no_link_help_text");
+      const textLayout = measureText(text, px(24), contentW);
+      this.widgets.notLinkedGroup.createWidget(hmUI.widget.TEXT, {
+        x: padX, y, w: contentW, h: textLayout.height,
+        color: 0xc7c7c7, text_size: px(24), text_style: hmUI.text_style.WRAP,
+        align_h: hmUI.align.CENTER_H, align_v: hmUI.align.TOP,
+        text,
+      });
+      y += textLayout.height + px(32);
+
+      this.widgets.notLinkedGroup.createWidget(hmUI.widget.BUTTON, {
+        x: padX, y, w: contentW, h: BTN_H, radius: BTN_H / 2,
+        normal_color: 0x1f8ed6, press_color: 0x156fa8,
+        text: i18n("no_link_link"), text_size: px(28), color: 0xffffff,
+        click_func: () => {
+          hapticStrong();
+          WatchApi.sendCtaEvent(this, CTA.OPEN_LINK_QR).catch(() => {});
+          const url = AppStorage.getLinkUrl();
+          push({ url: "page/link", params: JSON.stringify({ url }) });
+        },
+      });
+      y += BTN_H;
+
+      this.widgets.notLinkedGroup.createWidget(hmUI.widget.FILL_RECT, {
+        x: 0, y, w: width, h: px(80), color: 0x000000,
+      });
+
+      // Текст тут длиннее экрана - сигнализируем, что можно скроллить вниз
+      this.widgets.notLinkedGroup.createWidget(hmUI.widget.PAGE_SCROLLBAR, {});
+
+      this.setVisible(this.widgets.notLinkedGroup, false);
     },
 
     // --- Навигация физическими кнопками ---
@@ -344,9 +443,11 @@ Page(
       const isLoading = nextState === SCREEN_LOADING;
       const isResult = nextState === SCREEN_RESULT;
       const isError = nextState === SCREEN_ERROR;
+      const isNotLinked = nextState === SCREEN_NOT_LINKED;
 
       this.setVisible(this.widgets.loadingGroup, isLoading);
       this.setVisible(this.widgets.errorGroup, isError);
+      this.setVisible(this.widgets.notLinkedGroup, isNotLinked);
 
       if (isLoading) {
         this.widgets.loadingAnim.show(
@@ -364,7 +465,7 @@ Page(
       }
 
       if (isResult) {
-        this.renderCollection(payload.collection, payload.emptyMessage);
+        this.renderCollection(payload.collection);
       } else {
         this.clearCollection();
       }
@@ -384,16 +485,13 @@ Page(
 
           if (status === "OK") {
             logger.log('Received collection from phone, items:', collection.length);
+            AppStorage.setRecord(STORAGE_KEYS.LINKED, true);
             AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, JSON.stringify(collection));
             this.setScreenState(SCREEN_RESULT, { collection });
           } else if (status === "NO_LINK") {
-            // Кошелёк не привязан: показываем пустой экран с подсказкой,
-            // настройки при этом остаются доступны (helpImg рисуется всегда)
             logger.log('Wallet is not linked');
-            this.setScreenState(SCREEN_RESULT, {
-              collection: [],
-              emptyMessage: i18n("no_wallet_link") || "Wallet is not linked.\nLink it on the website\nvia Settings",
-            });
+            AppStorage.setRecord(STORAGE_KEYS.LINKED, false);
+            this.setScreenState(SCREEN_NOT_LINKED);
           } else {
             logger.log("Error from phone:", status);
             this.setScreenState(SCREEN_ERROR, {
@@ -409,6 +507,37 @@ Page(
         });
     },
 
+    // Фоновая проверка из состояния "не привязан": привязка могла случиться
+    // на сайте, пока эти часы об этом не знают (перенесено из page/nolink.js).
+    // Ошибки/NO_LINK игнорируем молча - экран уже показывает всё нужное.
+    checkLinkInBackground() {
+      if (this.state.checking) return;
+      this.state.checking = true;
+
+      const request = Profile.createRequestData();
+
+      this.request({
+        method: "GET_COLLECTION",
+        request,
+      })
+        .then((data) => {
+          this.state.checking = false;
+          const { status = "", collection = [] } = data;
+
+          if (status === "OK") {
+            logger.log('Link confirmed by phone, showing collection');
+            WatchApi.sendCtaEvent(this, CTA.LINKED).catch(() => {});
+            AppStorage.setRecord(STORAGE_KEYS.LINKED, true);
+            AppStorage.setRecord(STORAGE_KEYS.COLLECTION_JSON, JSON.stringify(collection));
+            this.setScreenState(SCREEN_RESULT, { collection });
+          }
+        })
+        .catch((err) => {
+          this.state.checking = false;
+          logger.log("Background link check skipped:", err);
+        });
+    },
+
     clearCollection() {
       this.widgets.listItems.forEach((widget) => hmUI.deleteWidget(widget));
       this.widgets.listItems = [];
@@ -416,6 +545,10 @@ Page(
       if (this.widgets.emptyText) {
         hmUI.deleteWidget(this.widgets.emptyText);
         this.widgets.emptyText = null;
+      }
+      if (this.widgets.mintButton) {
+        hmUI.deleteWidget(this.widgets.mintButton);
+        this.widgets.mintButton = null;
       }
       if (this.widgets.helpImg) {
         hmUI.deleteWidget(this.widgets.helpImg);
@@ -427,7 +560,7 @@ Page(
       this.state.prevSelectedIndex = -1;
     },
 
-    renderCollection(collection, emptyMessage) {
+    renderCollection(collection) {
       this.clearCollection();
       this.state.collectionItems = collection || [];
 
@@ -436,7 +569,7 @@ Page(
 
       if (isEmpty) {
         const emptyH = px(140);
-        const emptyY = (height - emptyH) / 2 - px(40);
+        const emptyY = startY + px(40);
         this.widgets.emptyText = hmUI.createWidget(hmUI.widget.TEXT, {
           x: px(40),
           y: emptyY,
@@ -444,11 +577,26 @@ Page(
           h: emptyH,
           color: 0xffffff, text_size: px(28), text_style: hmUI.text_style.WRAP,
           align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V,
-          text: emptyMessage || i18n("empty_collection") || "Collection is empty",
+          text: i18n("empty_collection") || "Collection is empty",
+        });
+
+        // Пустая коллекция - лучший момент предложить минт, а не только Settings
+        const mintY = emptyY + emptyH + spacing;
+        this.widgets.mintButton = hmUI.createWidget(hmUI.widget.BUTTON, {
+          x: startX, y: mintY, w: buttonWidth, h: BTN_H, radius: BTN_H / 2,
+          normal_color: 0x1f8ed6, press_color: 0x156fa8,
+          text: i18n("settings_action_mint_title"), text_size: px(28), color: 0xffffff,
+          click_func: () => {
+            hapticStrong();
+            push({
+              url: "page/qr",
+              params: JSON.stringify({ url: WEBSITE_URL, ref: "collection_mint" }),
+            });
+          },
         });
 
         // Настройки должны быть доступны и при пустой коллекции
-        this.buildHelpIcon(emptyY + emptyH + spacing);
+        this.buildHelpIcon(mintY + BTN_H + spacing);
         return;
       }
 
@@ -539,6 +687,7 @@ Page(
 
     onDestroy() {
       offKey();
+      vibrator.stop();
       if (this.widgets.loadingAnim) {
         this.widgets.loadingAnim.delete();
       }
