@@ -1,6 +1,7 @@
 import { createWidget, deleteWidget, widget, align, text_style } from '@zos/ui'
 import { t } from "./../utils/TextUtils.js";
 import { getDeviceInfo } from '@zos/device'
+import { back } from "@zos/router";
 import {
   setPageBrightTime, resetPageBrightTime,
   pauseDropWristScreenOff, resumeDropWristScreenOff
@@ -8,11 +9,9 @@ import {
 import { BasePage } from '@zeppos/zml/base-page'
 import { WatchApi } from '../utils/watch-api'
 import AppStorage from '../utils/config/storage.js';
-import { STORAGE_KEYS, CTA } from '../utils/config/constants';
 import { log as Logger, px } from "@zos/utils";
-import {
-  ERROR_COLOR
-} from "../utils/config/constants.js";
+import { STORAGE_KEYS, CTA, ERROR_COLOR } from "../utils/config/constants.js";
+import { PRACTICE_NORMAL_COLOR, PRACTICE_PRESSED_COLOR } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
 const { width: W, height: H } = getDeviceInfo()
@@ -216,11 +215,18 @@ Page(BasePage({
       this.add(widget.BUTTON, {
         x: Math.floor(W * 0.2), y: Math.floor(H * 0.62),
         w: Math.floor(W * 0.6), h: UI.btnH, radius: UI.btnRadius,
-        text: t("retry"), normal_color: 0x2d6cdf, press_color: 0x1f4fa3,
+        text: t("retry"), normal_color: PRACTICE_NORMAL_COLOR, press_color: PRACTICE_PRESSED_COLOR,
         text_size: UI.btnTextSize,
         click_func: () => this.restore()
       })
     } else {
+      this.add(widget.BUTTON, {
+        x: Math.floor(W * 0.2), y: Math.floor(H * 0.62),
+        w: Math.floor(W * 0.6), h: UI.btnH, radius: UI.btnRadius,
+        text: t("OK"), normal_color: PRACTICE_NORMAL_COLOR, press_color: PRACTICE_PRESSED_COLOR,
+        text_size: UI.btnTextSize,
+        click_func: () => back()
+      })
       WatchApi.sendCtaEvent(this, CTA.LINKED).catch(() => {})
     }
     AppStorage.setRecord(STORAGE_KEYS.LINKED, ok)

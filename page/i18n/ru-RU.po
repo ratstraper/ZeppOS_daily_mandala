@@ -17,7 +17,7 @@ msgid "practice_subtitle"
 msgstr "Ежедневная мандала для медитации"
 
 msgid "loading_mandala"
-msgstr "Определяем энергии дня"
+msgstr "Определяем числа дня"
 
 msgid "done_today"
 msgstr "Сегодня выполнено"
@@ -60,7 +60,7 @@ msgid "help_main_slide3_action"
 msgstr "Пройти на сайт"
 
 msgid "label_next"
-msgstr "Далее →"
+msgstr "Далее"
 
 msgid "help_qr_title"
 msgstr "Отсканируй"
@@ -109,7 +109,7 @@ msgid "deep_practice_slide1_text"
 msgstr "Мандала Дня помогает создать привычку.\n\nМандала Рождения делает твою практику глубоко личной."
 
 msgid "deep_practice_slide1_action"
-msgstr "Дальше →"
+msgstr "Дальше"
 
 msgid "deep_practice_slide2_title"
 msgstr "Одна дата"
@@ -131,8 +131,10 @@ msgid "deep_practice_slide4_text"
 msgstr "Только один человек может владеть ей в один момент времени.\nПроверь на сайте дату и отчекань свою Мандалу."
 
 msgid "deep_practice_slide4_action"
-msgstr "Проверить дату →"
+msgstr "Проверить дату"
 
+msgid "deep_link_to_mint"
+msgstr "Проверить и отчеканить"
 
 ///////////////
 msgid "month_january"
@@ -182,36 +184,45 @@ msgid "no_link_link"
 msgstr "Связать"
 
 msgid "no_link_help_title"
-msgstr "Мандала на вашем запястье"
+msgstr "Мандала на твоем запястье"
 
 msgid "no_link_help_text"
-msgstr "Если вы владеете одной или несколькими NFT из коллекции Мандала души, вы можете связать их с вашими часами. И они в любой момент будут доступны вам на вашем запястье.\n\nПерейдите по ссылке на сайт, подтвердите владение кошельком, на котором есть NFT из коллекции, и ваши мандалы будут отображаться на ваших часах в разделе Коллекция."
+msgstr "Если у тебя еще нет NFT-Мандал для отображения на часах в разделе Коллекция - узнай о Мандалах больше и отчекань свою: Пройти на сайт\n\nЕсли ты уже владеешь одной или несколькими NFT-Мандалами, сделай их доступными в любой момент на своем запястье - подтверди на сайте владение кошельком, хранящем NFT-Мандалы, свяжи его с часами и Мандалы отобразятся на часах в разделе Коллекция: Связать"
+
+msgid "collection_go_site"
+msgstr "Пройти на сайт"
 
 // collection page
 msgid "loading"
 msgstr "Загрузка..."
 
 msgid "empty_collection"
-msgstr "Коллекция пуста"
+msgstr "Твоя Коллекция пуста. Чтобы отчеканить свою NFT-Мандалу Рождения нажми значок Настройки ниже."
 
 msgid "no_wallet_link"
-msgstr "Кошелёк не привязан.\nПривяжите его на сайте\nчерез Настройки"
+msgstr "Кошелек не привязан.\Привяжи его на сайте через Настройки"
 
 // settings page: collection maintenance actions (refresh / mint / unlink)
 msgid "settings_action_refresh_title"
 msgstr "Обновить список"
 
 msgid "settings_action_refresh_desc"
-msgstr "Проверить кошелёк ещё раз на новые мандалы"
+msgstr "Проверить кошелек еще раз на новые Мандалы"
 
 msgid "settings_action_mint_title"
 msgstr "Минт NFT"
 
+msgid "settings_action_mint_mandala"
+msgstr "Отчеканить Мандалу"
+
+msgid "go_website"
+msgstr "На сайт"
+
 msgid "settings_action_mint_desc"
-msgstr "Перейти на сайт, чтобы сминтить свою мандалу"
+msgstr "Открыть сайт, чтобы отчеканить свою Мандалу"
 
 msgid "settings_action_unlink_title"
-msgstr "Отвязать кошелёк"
+msgstr "Отвязать Коллекцию"
 
 msgid "settings_action_unlink_desc"
 msgstr "Разорвать связь этих часов с кошельком коллекции"
@@ -227,7 +238,7 @@ msgid "qr_expired"
 msgstr "QR expired"
 
 msgid "waiting_wallet"
-msgstr "Waiting for wallet..."
+msgstr "Ждем привязки к коллекции..."
 
 msgid "link_collection"
 msgstr "Link the collection\nin wallet\n{0}\nto this watch?"

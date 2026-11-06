@@ -1,9 +1,14 @@
+import { px } from "@zos/utils";
+
 export default class LoadingAnimationComponent {
   constructor(hmUI) {
     this._hmUI = hmUI;
     this._img = null;
-    // this._deleted = false;
+    this._loadingAnimSize = px(48);
   }
+
+
+  getloadingAnimSize() { return this._loadingAnimSize; }
 
   show(x, y) {
     this._img = this._hmUI.createWidget(this._hmUI.widget.IMG_ANIM, {

@@ -5,6 +5,10 @@ import {
   text_style,
   getTextLayout,
 } from "@zos/ui";
+import {
+  setPageBrightTime, resetPageBrightTime,
+  pauseDropWristScreenOff, resumeDropWristScreenOff
+} from '@zos/display'
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
 import { Vibrator } from "@zos/sensor";
@@ -13,21 +17,21 @@ import { back } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
 import { WatchApi } from "../utils/watch-api";
 import { CTA } from "../utils/config/constants.js";
-
+import { WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 const logger = Logger.getLogger("help_qr");
 
 const { width, height } = getDeviceInfo();
 const vibrator = new Vibrator();
 
 const UI = {
-  titleX: px(24),
+  titleX: ui.left, //px(24),
   titleY: px(34),
-  titleW: width - px(48),
+  titleW: ui.width, //width - px(48),
   titleSize: px(30),
 
-  introX: px(28),
+  introX: ui.left, //px(28),
   introY: px(92),
-  introW: width - px(56),
+  introW: ui.width, //width - px(56),
   introSize: px(20),
 
   qrSize: px(156),
@@ -37,12 +41,12 @@ const UI = {
   domainX: px(24),
   domainSize: px(18),
 
-  textX: px(24),
-  textW: width - px(48),
+  textX: ui.left, //px(24),
+  textW: ui.width, //width - px(48),
   textSize: px(20),
 
-  backX: px(36),
-  backW: width - px(72),
+  backX: ui.left, //px(36),
+  backW: ui.width, //width - px(72),
   backH: px(72),
   backY: height - px(94),
 };
@@ -73,8 +77,8 @@ function withRef(url, ref) {
 Page(
   BasePage({
     state: {
+      title: i18n("help_qr_title"),
       url: "https://mandala.garageno9.site",
-      fullScreen: false,
       ref: null,
     },
 
@@ -82,8 +86,8 @@ Page(
       if (!params) return;
       try {
         const parsed = JSON.parse(params);
+        if (parsed?.title) this.state.title = parsed.title;
         if (parsed?.url) this.state.url = parsed.url;
-        if (parsed?.full) this.state.fullScreen = parsed.full;
         if (parsed?.ref) this.state.ref = parsed.ref;
       } catch (e) {
         logger.log("params parse failed", e);
@@ -94,96 +98,56 @@ Page(
       logger.log(`QR.JS`);
       WatchApi.sendCtaEvent(this, CTA.OPEN_QR).catch(() => {});
       const domain = i18n("help_qr_domain");
+      this.showQr(this.state.title, withRef(this.state.url, this.state.ref), domain);
+    },
 
-      if (!this.state.fullScreen) {
-        const title = i18n("help_qr_title");
-        const intro = i18n("help_qr_intro");
-        const titleLayout = measureText(title, UI.titleSize, UI.titleW);
-        const introLayout = measureText(intro, UI.introSize, UI.introW);
+    showQr(title, url, domain) {
+      setPageBrightTime({ brightTime: 600000 })       // держим экран, пока висит QR
+      pauseDropWristScreenOff({ duration: 600000 })
+      const size = Math.floor(Math.min(width, height) * 0.45);
+      createWidget(widget.TEXT, {
+        x: 0, 
+        y: Math.floor(height * 0.05), 
+        w: width, 
+        h: 40,
+        color: 0xffffff, 
+        text_size: 28, 
+        text_style: text_style.WRAP,
+        align_h: align.CENTER_H,
+        align_v: align.TOP,
+        text: title
+      });
 
-        createWidget(widget.TEXT, {
-          x: UI.titleX,
-          y: UI.titleY,
-          w: UI.titleW,
-          h: titleLayout.height,
-          color: 0xffffff,
-          text_size: UI.titleSize,
-          text_style: text_style.WRAP,
-          align_h: align.CENTER_H,
-          align_v: align.TOP,
-          text: title,
-        });
-
-        createWidget(widget.TEXT, {
-          x: UI.introX,
-          y: UI.introY,
-          w: UI.introW,
-          h: introLayout.height,
-          color: 0xbdbdbd,
-          text_size: UI.introSize,
-          text_style: text_style.WRAP,
-          align_h: align.CENTER_H,
-          align_v: align.TOP,
-          text: intro,
-        });
-      }
-
-      const fullScreenOffset = UI.titleSize + UI.introSize * 2;
-      let qrSize = UI.qrSize;
-      let bgSize = UI.qrSize + UI.qrPad * 2;
-      let bgY = UI.qrY;
-
-      if (this.state.fullScreen) {
-        bgSize += fullScreenOffset;
-        qrSize += fullScreenOffset;
-        bgY -= fullScreenOffset;
-      }
-
-      const bgX = (width - bgSize) / 2;
-
+      const qrPad = px(10)
+      const bgX = Math.floor((width - size) / 2);
+      let bgY = Math.floor(height * 0.17);
+  
       createWidget(widget.QRCODE, {
-        content: withRef(this.state.url, this.state.ref),
-        x: bgX + UI.qrPad,
-        y: bgY + UI.qrPad,
-        w: qrSize,
-        h: qrSize,
+        content: url,
+        x: bgX + qrPad, 
+        y: bgY + qrPad, 
+        w: size - qrPad * 2, 
+        h: size - qrPad * 2,
         bg_x: bgX,
         bg_y: bgY,
-        bg_w: bgSize,
-        bg_h: bgSize,
+        bg_w: size,
+        bg_h: size,
         bg_radius: px(14),
       });
 
+      bgY = bgY + qrPad + size; 
       createWidget(widget.TEXT, {
-        x: UI.domainX,
-        y: bgY + bgSize + px(12),
-        w: width - px(48),
-        h: px(24),
-        color: 0x6f6f6f,
-        text_size: UI.domainSize,
+        x: 0, 
+        y: bgY, //Math.floor(height * 0.78), 
+        w: width, 
+        h: UI.backY - bgY,
+        color: 0x888888, 
+        text_size: 22,
         text_style: text_style.NONE,
         align_h: align.CENTER_H,
         align_v: align.CENTER_V,
-        text: domain,
+        text: domain
       });
-
-      if (!this.state.fullScreen) {
-        const text = i18n("help_qr_text");
-        const textLayout = measureText(text, UI.textSize, UI.textW);
-
-        createWidget(widget.TEXT, {
-          x: UI.textX,
-          y: bgY + bgSize + px(46),
-          w: UI.textW,
-          h: textLayout.height,
-          color: 0xc7c7c7,
-          text_size: UI.textSize,
-          text_style: text_style.WRAP,
-          align_h: align.CENTER_H,
-          align_v: align.TOP,
-          text,
-        });
-      }
 
       createWidget(widget.BUTTON, {
         x: UI.backX,
@@ -205,6 +169,8 @@ Page(
 
     onDestroy() {
       vibrator.stop();
+      resetPageBrightTime()
+      resumeDropWristScreenOff({ duration: 0 }) 
     },
   })
 );

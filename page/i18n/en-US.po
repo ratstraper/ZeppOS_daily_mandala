@@ -18,7 +18,7 @@ msgid "practice_subtitle"
 msgstr "Daily Mandala for meditation"
 
 msgid "loading_mandala"
-msgstr "Determining the day's energy"
+msgstr "Determining the day's numbers"
 
 msgid "done_today"
 msgstr "Done today"
@@ -43,7 +43,7 @@ msgid "help_main_slide1_title"
 msgstr "Practice"
 
 msgid "help_main_slide1_text"
-msgstr "Daily Mandala changes every day and is open to everyone.\n\nYou can use it for a short daily meditation or just look at it as an art object."
+msgstr "Daily Mandala changes every day, is generated from today’s date, and is open to everyone.\n\nYou can use it for a short daily meditation or simply admire it as an art object."
 
 msgid "help_main_slide2_title"
 msgstr "Collection"
@@ -61,7 +61,7 @@ msgid "help_main_slide3_action"
 msgstr "Visit the website"
 
 msgid "label_next"
-msgstr "Next →"
+msgstr "Next"
 
 msgid "help_qr_title"
 msgstr "Scan"
@@ -74,7 +74,7 @@ msgid "help_qr_domain"
 msgstr "mandala.garageno9.site"
 
 msgid "help_qr_text"
-msgstr "Mint your mandala, connect your wallet, then link this watch."
+msgstr "Mint your Mandala, connect your wallet, then link this watch."
 
 msgid "common_back"
 msgstr "Back"
@@ -116,10 +116,10 @@ msgid "deep_practice_slide1_title"
 msgstr "Go Deeper"
 
 msgid "deep_practice_slide1_text"
-msgstr "Daily Mandala helps you build the habit.\n\nYour Birth Mandala makes the practice personal."
+msgstr "Daily Mandala helps you build the habit.\n\nYour BirthMandala makes the practice personal."
 
 msgid "deep_practice_slide1_action"
-msgstr "Learn more →"
+msgstr "Learn more"
 
 msgid "deep_practice_slide2_title"
 msgstr "One Date"
@@ -140,7 +140,10 @@ msgid "deep_practice_slide4_text"
 msgstr "Only one person can own it at a time.\nCheck on the website if your date is still available and mint your Mandala."
 
 msgid "deep_practice_slide4_action"
-msgstr "Check your date →"
+msgstr "Check your date"
+
+msgid "deep_link_to_mint"
+msgstr "Check & Mint"
 
 ///////////////
 msgid "month_january"
@@ -193,14 +196,17 @@ msgid "no_link_help_title"
 msgstr "Mandala on Your Wrist"
 
 msgid "no_link_help_text"
-msgstr "If you own one or more NFTs from the Soul Mandala collection, you can link them to your watch. They will then be available on your wrist at any time.\n\nFollow the link to the website, confirm ownership of the wallet holding the NFTs from the collection, and your mandalas will appear on your watch in the Collection section."
+msgstr "If you don't yet have Mandala NFTs to display on your watch in the Collection section, learn more about Mandalas and mint yours: Visit the website\n\nIf you already own one or more Mandala NFTs, make them available on your wrist at any time - confirm on the website ownership of the wallet holding your Mandala NFTs, link it to your watch, and the Mandalas will appear on your watch in the Collection section: Link"
+
+msgid "collection_go_site"
+msgstr "Visit the website"
 
 // collection page
 msgid "loading"
 msgstr "Loading..."
 
 msgid "empty_collection"
-msgstr "Collection is empty"
+msgstr "Your Collection is empty. To mint your BirthMandala NFT tap Settings sign below."
 
 msgid "no_wallet_link"
 msgstr "Wallet is not linked.\nLink it on the website\nvia Settings"
@@ -210,16 +216,22 @@ msgid "settings_action_refresh_title"
 msgstr "Refresh list"
 
 msgid "settings_action_refresh_desc"
-msgstr "Check your wallet again for new mandalas"
+msgstr "Check your wallet again for new Mandalas"
 
 msgid "settings_action_mint_title"
 msgstr "Mint NFT"
 
+msgid "settings_action_mint_mandala"
+msgstr "Mint your Mandala"
+
+msgid "go_website"
+msgstr "Website"
+
 msgid "settings_action_mint_desc"
-msgstr "Open the website to mint your personal mandala"
+msgstr "Open the website to mint your personal Mandala"
 
 msgid "settings_action_unlink_title"
-msgstr "Unlink wallet"
+msgstr "Unlink Collection"
 
 msgid "settings_action_unlink_desc"
 msgstr "Remove the link between this watch and your wallet"
@@ -235,7 +247,7 @@ msgid "qr_expired"
 msgstr "QR expired"
 
 msgid "waiting_wallet"
-msgstr "Waiting for wallet..."
+msgstr "Waiting for the wallet..."
 
 msgid "link_collection"
 msgstr "Link the collection\nin wallet\n{0}\nto this watch?"

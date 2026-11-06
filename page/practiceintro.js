@@ -8,6 +8,7 @@ import AppStorage from "../utils/config/storage.js";
 import { WatchApi } from "../utils/watch-api";
 import { STORAGE_KEYS, CTA } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
+import { WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
 const vibrator = new Vibrator();
@@ -27,7 +28,7 @@ const SLIDES = [
 ];
 
 const UI = {
-  padX: px(28),
+  padX: ui.left, //px(40), //28
   topY: px(42),
 
   titleSize: px(30),
@@ -89,7 +90,7 @@ Page(
       // Весь экран длиннее дисплея - сигнализируем, что можно скроллить вниз
       hmUI.createWidget(hmUI.widget.PAGE_SCROLLBAR, {});
 
-      const contentW = width - UI.padX * 2;
+      const contentW = ui.width; // width - UI.padX * 2;
       let y = UI.topY;
 
       SLIDES.forEach((slide, index) => {

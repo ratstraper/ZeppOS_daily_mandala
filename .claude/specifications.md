@@ -119,7 +119,7 @@ should be treated as the project's *de facto* interaction contract:
 - **Menu items**: Practice → `page/practice` (first visit only: see the onboarding rule
   below), Collection → `page/collection` (gated, see below), plus a persistent help icon →
   `page/help` with `SLIDES_MAIN` (3 slides, last one has a "visit website" action →
-  `page/qr`, tagged `ref: "help_main"` — see §5.6).
+  `page/qr`, tagged `ref: "main_home"` — see §5.6).
 - **Rule — Collection gating**: `executeAction()` checks
   `AppStorage.getRecord(STORAGE_KEYS.LINKED)`. If falsy, tapping Collection routes to
   `page/nolink` instead of `page/collection`.
@@ -257,27 +257,61 @@ should be treated as the project's *de facto* interaction contract:
   `SCREEN_LOADING`/`SCREEN_RESULT`/`SCREEN_ERROR` set as a new `SCREEN_NOT_LINKED`:
   1. **Not linked** (`SCREEN_NOT_LINKED`) — `widgets.notLinkedGroup` (built once up front,
      toggled via `setVisible()` exactly like `loadingGroup`/`errorGroup`): `no_link_help_title`
-     + `no_link_help_text` (the former `page/linkinfo.js` copy, now embedded here) + one
-     button (i18n `no_link_link`) that fires `CTA.OPEN_LINK_QR` and pushes `page/link` with
-     `{ url: AppStorage.getLinkUrl() }` — the real pairing QR, not a second
-     "learn more" step. No settings icon in this state (nothing to configure yet). The group
-     also contains an `hmUI.widget.PAGE_SCROLLBAR` child (so it shows/hides with the group),
-     since `no_link_help_text` is long enough to push content below the screen on most
-     layouts.
+     + `no_link_help_text` (the former `page/linkinfo.js` copy, now embedded here) + a pair of
+     side-by-side half-width CTAs built by `buildSplitButton()` (see below), not a single
+     full-width button. Left (green, `0x00a86b`/`0x007a4d`, i18n
+     `settings_action_mint_title`) pushes `page/qr` with
+     `{ url: WEBSITE_URL + '/#mint', ref: "collection_mint" }`; right (blue, `0x1f8ed6`/`0x156fa8`, i18n
+     `no_link_link`) fires `CTA.OPEN_LINK_QR` and pushes `page/link` with
+     `{ url: AppStorage.getLinkUrl() }` — the real pairing QR, not a second "learn more" step.
+     No settings icon in this state (nothing to configure yet). The group also contains an
+     `hmUI.widget.PAGE_SCROLLBAR` child (so it shows/hides with the group), since
+     `no_link_help_text` plus the button row is long enough to push content below the screen
+     on most layouts; a trailing spacer sized `(height - BTN_H) / 2` reserves exactly enough
+     scroll room for the button pair to land vertically centered on screen once the user
+     scrolls all the way down.
+     - **Nesting constraint (important platform fact)**: the two split buttons are **not**
+       children of `notLinkedGroup` — they're built as top-level page widgets
+       (`widgets.notLinkedMintBtn`/`widgets.notLinkedLinkBtn`), siblings of it, with their
+       own `setVisible()` calls alongside `notLinkedGroup`'s in both `buildNotLinkedGroup()`
+       (initial hide) and `setScreenState()` (toggle on `isNotLinked`). A `GROUP` nested
+       inside another dynamically-created `GROUP` (`someGroup.createWidget(hmUI.widget.GROUP,
+       …)`) does not work reliably on-device: `buildSplitButton()` originally took the parent
+       group and called `parent.createWidget(hmUI.widget.GROUP, …)`, which broke `build()`
+       partway through `buildNotLinkedGroup()` — before it reached its own trailing
+       `setVisible(notLinkedGroup, false)` — leaving `loadingGroup`'s "Loading…" text (default
+       `VISIBLE`, never explicitly hidden since `setScreenState()` was never reached) and
+       `notLinkedGroup`'s title/text (already created at the point of the break) both on
+       screen at once, with the two buttons never created at all. Every other `GROUP` in this
+       file (loading/error/not-linked groups, collection row groups) is nested exactly one
+       level below the page itself — this is the only place a second level was attempted, and
+       it's now known not to work.
+     - **`buildSplitButton({x, y, w, h, side, normalColor, pressColor, text, onActivate})`**:
+       renders one half of a capsule that reads as a single pill split into two — not a
+       native `widget.BUTTON` (which only supports one uniform `radius` for all four
+       corners), but a top-level `GROUP` containing a fully-rounded `FILL_RECT`
+       (`radius: h/2`) plus a second, unrounded `FILL_RECT` of the same color overlaid on the
+       inner edge (width `h/2`, on the right for `side: "left"`, on the left for
+       `side: "right"`) that squares off just that one corner — leaving only the outer corner
+       rounded. Press feedback and tap-vs-drag cancellation are hand-rolled on the `GROUP`'s
+       own `CLICK_DOWN`/`MOVE`/`CLICK_UP` (repaint both rects together; a local `pressed` flag
+       cleared on `MOVE` suppresses `onActivate()` on release, mirroring `attachSelectable`'s
+       cancel-on-move rule but via a local flag instead of the shared `selectedIndex`, since
+       this pair sits outside the physical-key cycle like the buttons it replaces). Returns
+       the `GROUP` so the caller can store it for later `setVisible()` calls.
   2. **Linked, collection has items** (`SCREEN_RESULT`, non-empty) — unchanged from before:
      the row list + the settings icon as the trailing focusable element.
   3. **Linked, collection empty** (`SCREEN_RESULT`, empty array) — `empty_collection` text +
-     a new **Mint** button (i18n `settings_action_mint_title`, pushes `page/qr` with
-     `{ url: WEBSITE_URL, ref: "collection_mint" }` — own `ref`, distinct from
-     `settings_mint`, §5.6) + the settings icon below it. This is the one state that used to
+    the settings icon below it. This is the one state that used to
      show `empty_collection` with **no** call to action beyond the settings icon; now there's
      a direct path to minting right where a user who just checked and found nothing would be
      looking.
-  Both new buttons (`notLinkedGroup`'s link button, the empty-state Mint button) are plain
-  `widget.BUTTON`s with `click_func` — touch-only, not part of the `bgRects`/`selectedIndex`
-  physical-key cycle, matching this app's existing convention for standalone CTA buttons
-  (`page/settings.js`, `page/qr.js`'s back button): "no physical up/down/select cycling
-  between standalone buttons" already applied to those pages and now to these two.
+  All of these CTAs (`notLinkedGroup`'s split-button pair, the empty-state Mint button —
+  the latter still a plain `widget.BUTTON` with `click_func`) are touch-only, not part of
+  the `bgRects`/`selectedIndex` physical-key cycle, matching this app's existing convention
+  for standalone CTA buttons (`page/settings.js`, `page/qr.js`'s back button): "no physical
+  up/down/select cycling between standalone buttons" already applied to those pages and now
+  to these too.
 - **On `build()`**: after `consumeRefreshRequest()` (still checked first — still the only
   way `page/settings.js`'s Refresh reaches a real network call, now a link-status check
   followed conditionally by `GET_COLLECTION`, see below), reads
@@ -449,7 +483,7 @@ should be treated as the project's *de facto* interaction contract:
      in the stack — a single `replace()` chain in, a single `replace()` chain out, exactly
      one collection instance at any time.
   2. **Mint** (`openMint()`) — pushes `page/qr` with
-     `{ url: WEBSITE_URL, ref: "settings_mint" }`, same destination as the "mint & link"
+     `{ url: WEBSITE_URL + '/mint', ref: "settings_mint" }`, same destination as the "mint & link"
      help-slide action elsewhere in the app, tagged with its own `ref` (§5.6) so this entry
      point is distinguishable in the site's logs.
   3. **Unlink** — tapping the normal button no longer unlinks directly. It calls
@@ -649,7 +683,7 @@ neither depends on the other.
   | `OPEN_MAIN_HELP` | `page/index.js` `executeAction()` | Help icon activated on the main menu |
   | `OPEN_DAILY_HELP` | `page/practiceintro.js` `build()` | the onboarding screen shown (§4.1a) — fires on every repeat showing, not just the first |
   | `OPEN_DEEPER` | `page/practice.js` `openDeep()` | the Help-styled icon on Practice activated — unconditional now, no view-count gate (§4.2) |
-  | `OPEN_LINK_QR` | `page/collection.js`'s not-linked button (§4.4) | the one button on the not-linked state tapped — moved here from the deleted `page/nolink.js`, same meaning |
+  | `OPEN_LINK_QR` | `page/collection.js`'s not-linked state, right split-button (§4.4) | the pairing-QR half of the button pair tapped — moved here from the deleted `page/nolink.js`, same meaning |
   | `OPEN_QR` | `page/qr.js` `build()` | any open of the generic QR screen |
   | `CONFIRM_LINK` | `page/link.js` `confirm()` | "Confirm" tapped on the wallet-confirmation screen |
   | `LINKED` | `page/link.js` `showDone(true, …)`; `page/collection.js` `checkLinkInBackground()` on `status === "OK"` (§4.4) | device confirms the wallet link succeeded — two independent detection paths |
@@ -751,6 +785,18 @@ them deliberately (in the spec first) rather than by accident.
     have. Unlink is the one exception now: its `normalColor`/`pressColor` are read live by
     its hidden Confirm button (§4.8) — not dead for that entry, just never used for the
     *normal*-state Unlink button itself. See §4.8.
+8. **A `GROUP` nested inside another dynamically-created `GROUP` does not work reliably on
+   device.** Every `GROUP` elsewhere in this app (`loadingGroup`, `errorGroup`,
+   `notLinkedGroup`, collection row groups) is nested exactly one level below the page
+   itself — none is ever created via `someOtherGroup.createWidget(hmUI.widget.GROUP, …)`.
+   `page/collection.js`'s `buildSplitButton()` (§4.4) originally did exactly that (parented
+   under `notLinkedGroup`), and it broke `build()` partway through, before `notLinkedGroup`
+   itself was ever hidden — leaving `loadingGroup`'s default-visible "Loading…" text and
+   `notLinkedGroup`'s already-created title/text on screen simultaneously, with the two
+   buttons never appearing at all. Fixed by making the split buttons top-level, page-level
+   `GROUP`s (siblings of `notLinkedGroup`, not children of it) with their own explicit
+   `setVisible()` calls alongside it. **Going forward: never nest a `GROUP` inside another
+   `GROUP` you created yourself — one level only, always directly on the page.**
 
 ---
 

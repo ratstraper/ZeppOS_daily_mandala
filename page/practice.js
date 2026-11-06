@@ -18,25 +18,22 @@ const DEEP_PRACTICE = [
   {
     titleKey: "deep_practice_slide1_title",
     textKey: "deep_practice_slide1_text",
-    label: "deep_practice_slide1_action",
   },
   {
     titleKey: "deep_practice_slide2_title",
     textKey: "deep_practice_slide2_text",
-    label: "label_next",
   },
   {
     titleKey: "deep_practice_slide3_title",
     textKey: "deep_practice_slide3_text",
-    label: "label_next",
   },
   {
     titleKey: "deep_practice_slide4_title",
     textKey: "deep_practice_slide4_text",
     action: {
       labelKey: "deep_practice_slide4_action",
-      url: WEBSITE_URL,
-      full: true,
+      title: i18n("deep_link_to_mint"),
+      url: WEBSITE_URL + "/mint",
       ref: "deep_practice",
     },
   },

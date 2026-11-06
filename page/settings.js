@@ -9,7 +9,7 @@ import AppStorage from "../utils/config/storage.js";
 import { WatchApi } from "../utils/watch-api";
 import { STORAGE_KEYS, WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
-import { TITLE, SECONDARY_BUTTON_HEIGHT } from "zosLoader:./index.[pf].layout.js";
+import { TITLE, SECONDARY_BUTTON_HEIGHT, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
 const vibrator = new Vibrator();
@@ -21,7 +21,7 @@ const vibrator = new Vibrator();
  * действие ниже безопасно и само себя корректирует независимо от его значения.
  */
 const UI = {
-  padX: px(28),
+  padX: ui.left, //px(28),
   topY: px(120),
 
   descSize: px(22),
@@ -102,7 +102,7 @@ Page(
     },
 
     renderActions() {
-      const contentW = width - UI.padX * 2;
+      const contentW = ui.width; //width - UI.padX * 2;
 
       const actions = [
         {
@@ -261,7 +261,7 @@ Page(
       logger.log("Settings: open mint QR");
       push({
         url: "page/qr",
-        params: JSON.stringify({ url: WEBSITE_URL, ref: "settings_mint" }),
+        params: JSON.stringify({ title: i18n("settings_action_mint_mandala"), url: WEBSITE_URL + "/mint", ref: "settings_mint" }),
       });
     },
 

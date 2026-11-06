@@ -13,6 +13,14 @@ export const PRACTICE_SELECTED_COLOR = 0x3397de;
 
 export const SECONDARY_BUTTON_HEIGHT = px(100);
 
+export const WORK_SCREEN = {
+  left: px(40),
+  width: DEVICE_WIDTH - 2 * px(40),
+  right: DEVICE_WIDTH - 2 * px(40),
+  title_top: px(1),
+  text_top: px(1)
+}
+
 export const FETCH_RESULT_TEXT = {
   x: px(50),
   y: px(100),

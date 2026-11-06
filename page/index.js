@@ -12,7 +12,7 @@ import Profile from "../utils/config/profile.js";
 import AppStorage from "../utils/config/storage";
 import { WatchApi } from "../utils/watch-api";
 
-import { FETCH_RESULT_TEXT, TITLE } from "zosLoader:./index.[pf].layout.js";
+import { FETCH_RESULT_TEXT, TITLE, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
 
 const logger = Logger.getLogger("mandala_day");
@@ -31,8 +31,9 @@ const SLIDES_MAIN = [
     textKey: "help_main_slide3_text",
     action: {
       labelKey: "help_main_slide3_action",
+      title: i18n("help_main_slide3_action"),
       url: WEBSITE_URL,
-      ref: "help_main",
+      ref: "index_home",
     },
   },
 ];
@@ -217,11 +218,11 @@ Page(
     },
 
     createLayout() {
-      const startX = px(40);            // Центрирование (40 пикселей от каждого края)      
+      const startX = ui.left;            // Центрирование (40 пикселей от каждого края)      
       const startY = px(130);           // Отступ сверху (под заголовком)
       const buttonHeight = px(126);      // Высота одной плашки
       const spacing = px(25);           // Расстояние между плашками
-      const buttonWidth = DEVICE_WIDTH - (2 * startX); // Ширина плашки (экран минус отступы по бокам)
+      const buttonWidth = ui.width; //DEVICE_WIDTH - (2 * startX); // Ширина плашки (экран минус отступы по бокам)
 
       return {
         startX,

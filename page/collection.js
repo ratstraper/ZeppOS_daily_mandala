@@ -14,6 +14,8 @@ import { NORMAL_COLOR, PRESSED_COLOR, WEBSITE_URL, COLLECTION_SHOW, STORAGE_KEYS
 
 import { width, height, screenShape, getDateFormatString } from "../utils/config/device.js";
 
+import { TITLE, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
+
 const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
 const SCREEN_ERROR = "SCREEN_ERROR";
@@ -22,8 +24,6 @@ const SCREEN_NOT_LINKED = "SCREEN_NOT_LINKED";
 const HELP_ICON_W = px(64);
 const HELP_ICON_H = px(104);
 const BTN_H = px(72);
-
-import { TITLE } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("mandala_day");
 const vibrator = new Vibrator();
@@ -68,6 +68,8 @@ Page(
       loadingGroup: null,
       errorGroup: null,
       notLinkedGroup: null,
+      notLinkedMintBtn: null,
+      notLinkedLinkBtn: null,
 
       loadingAnim: null,
       loadingText: null,
@@ -80,8 +82,8 @@ Page(
     },
 
     build() {
-      this.layout = this.createLayout();
       this.widgets.loadingAnim = new LoadingAnimationComponent(hmUI);
+      this.layout = this.createLayout();
 
       this.buildTitle();
       this.buildLoadingGroup();
@@ -173,12 +175,13 @@ Page(
     },
 
     createLayout() {
-      const startX = px(40);
-      const loadingAnimSize = px(48);
+      const startX = ui.left; // px(40);
+      // const loadingAnimSize = px(48);
+      const loadingAnimSize = this.widgets.loadingAnim.getloadingAnimSize(); //px(48);
       const loadingAnimX = (width - loadingAnimSize) / 2;
       const loadingAnimY = screenShape === 1 ? (height - loadingAnimSize) / 2 - px(36) : px(140);
       const loadingTextY = loadingAnimY + loadingAnimSize + px(22);
-      const buttonWidth = width - (2 * startX);
+      const buttonWidth = ui.width; // width - (2 * startX);
       const buttonHeight = px(126);
       const startY = px(130);
       const spacing = px(25);
@@ -233,8 +236,9 @@ Page(
     },
 
     // Статичный контент - строится один раз и просто скрывается/показывается,
-    // как loadingGroup/errorGroup. Один CTA: открыть реальный QR привязки
-    // (page/link), без промежуточного "подробнее" экрана.
+    // как loadingGroup/errorGroup. Два CTA рядом: слева - QR перехода на сайт
+    // (page/qr), справа - реальный QR привязки (page/link), без
+    // промежуточного "подробнее" экрана.
     buildNotLinkedGroup() {
       this.widgets.notLinkedGroup = hmUI.createWidget(hmUI.widget.GROUP, {
         x: 0, y: 0, w: width, h: height,
@@ -264,11 +268,36 @@ Page(
       });
       y += textLayout.height + px(32);
 
-      this.widgets.notLinkedGroup.createWidget(hmUI.widget.BUTTON, {
-        x: padX, y, w: contentW, h: BTN_H, radius: BTN_H / 2,
-        normal_color: 0x1f8ed6, press_color: 0x156fa8,
-        text: i18n("no_link_link"), text_size: px(28), color: 0xffffff,
-        click_func: () => {
+      // Пара кнопок-половинок одной "капсулы": скругление только с внешней
+      // стороны (левая - слева, правая - справа), между ними небольшой
+      // отступ вместо общей прямой границы. Это ДВА отдельных top-level
+      // GROUP-виджета страницы (сиблинги notLinkedGroup), а не вложенные
+      // внутрь него GROUP - вложенность GROUP-в-GROUP где-то в движке не
+      // работает (кнопки не появлялись, а build() обрывался до
+      // setScreenState, из-за чего оставались видны дефолтно-видимые
+      // loadingGroup/notLinkedGroup). Видимость переключается вручную в
+      // setScreenState() вместе с notLinkedGroup.
+      const pairGap = px(8);
+      const halfW = (contentW - pairGap) / 2;
+
+      this.widgets.notLinkedMintBtn = this.buildSplitButton({
+        x: padX, y, w: halfW, h: BTN_H, side: "left",
+        normalColor: 0x00a86b, pressColor: 0x007a4d,
+        text: i18n("go_website"),
+        onActivate: () => {
+          hapticStrong();
+          push({
+            url: "page/qr",
+            params: JSON.stringify({ title: i18n("collection_go_site"), url: WEBSITE_URL, ref: "collection_home" }),
+          });
+        },
+      });
+
+      this.widgets.notLinkedLinkBtn = this.buildSplitButton({
+        x: padX + halfW + pairGap, y, w: halfW, h: BTN_H, side: "right",
+        normalColor: 0x1f8ed6, pressColor: 0x156fa8,
+        text: i18n("no_link_link"),
+        onActivate: () => {
           hapticStrong();
           WatchApi.sendCtaEvent(this, CTA.OPEN_LINK_QR).catch(() => {});
           const url = AppStorage.getLinkUrl();
@@ -277,14 +306,70 @@ Page(
       });
       y += BTN_H;
 
+      // Запас под кнопками: при прокрутке до упора пара кнопок должна
+      // оказаться на середине экрана, а не просто у нижнего края контента.
+      const spacerH = (height - BTN_H) / 2;
       this.widgets.notLinkedGroup.createWidget(hmUI.widget.FILL_RECT, {
-        x: 0, y, w: width, h: px(80), color: 0x000000,
+        x: 0, y, w: width, h: spacerH, color: 0x000000,
       });
 
       // Текст тут длиннее экрана - сигнализируем, что можно скроллить вниз
       this.widgets.notLinkedGroup.createWidget(hmUI.widget.PAGE_SCROLLBAR, {});
 
       this.setVisible(this.widgets.notLinkedGroup, false);
+      this.setVisible(this.widgets.notLinkedMintBtn, false);
+      this.setVisible(this.widgets.notLinkedLinkBtn, false);
+    },
+
+    // Половинка "разрезанной капсулы": полный скруглённый прямоугольник
+    // (radius = h/2) + прямоугольник того же цвета без скругления, который
+    // перекрывает внутренний угол (обращённый к соседней кнопке) и делает
+    // его прямым. Клик обрабатывается на GROUP, как у строк коллекции
+    // (attachSelectable) - такой же cancel-on-move, но локальный флаг
+    // вместо общего selectedIndex, поскольку эта пара не участвует в
+    // клавиатурной навигации (как и прежняя одиночная кнопка). Top-level
+    // GROUP (hmUI.createWidget), не вложенный в другой GROUP - см. комментарий
+    // в buildNotLinkedGroup().
+    buildSplitButton({ x, y, w, h, side, normalColor, pressColor, text, onActivate }) {
+      const group = hmUI.createWidget(hmUI.widget.GROUP, { x, y, w, h });
+      const radius = h / 2;
+
+      const body = group.createWidget(hmUI.widget.FILL_RECT, {
+        x: 0, y: 0, w, h, radius, color: normalColor,
+      });
+      const squareX = side === "left" ? w - radius : 0;
+      const squareOff = group.createWidget(hmUI.widget.FILL_RECT, {
+        x: squareX, y: 0, w: radius, h, radius: 0, color: normalColor,
+      });
+
+      group.createWidget(hmUI.widget.TEXT, {
+        x: 0, y: 0, w, h, color: 0xffffff, text_size: px(28),
+        align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V,
+        text,
+      });
+
+      const paint = (color) => {
+        body.setProperty(hmUI.prop.COLOR, color);
+        squareOff.setProperty(hmUI.prop.COLOR, color);
+      };
+
+      let pressed = false;
+      group.addEventListener(hmUI.event.CLICK_DOWN, () => {
+        pressed = true;
+        paint(pressColor);
+      });
+      group.addEventListener(hmUI.event.MOVE, () => {
+        pressed = false;
+        paint(normalColor);
+      });
+      group.addEventListener(hmUI.event.CLICK_UP, () => {
+        paint(normalColor);
+        if (!pressed) return;
+        pressed = false;
+        onActivate();
+      });
+
+      return group;
     },
 
     // --- Навигация физическими кнопками ---
@@ -448,13 +533,17 @@ Page(
       this.setVisible(this.widgets.loadingGroup, isLoading);
       this.setVisible(this.widgets.errorGroup, isError);
       this.setVisible(this.widgets.notLinkedGroup, isNotLinked);
+      // Top-level, не вложены в notLinkedGroup (см. buildNotLinkedGroup) -
+      // переключаем отдельно той же меркой.
+      this.setVisible(this.widgets.notLinkedMintBtn, isNotLinked);
+      this.setVisible(this.widgets.notLinkedLinkBtn, isNotLinked);
 
       if (isLoading) {
         this.widgets.loadingAnim.show(
           this.layout.loadingAnimX,
           this.layout.loadingAnimY,
-          this.layout.loadingAnimSize,
-          this.layout.loadingAnimSize
+          // this.layout.loadingAnimSize,
+          // this.layout.loadingAnimSize
         );
       } else {
         this.widgets.loadingAnim.delete();
@@ -582,21 +671,7 @@ Page(
 
         // Пустая коллекция - лучший момент предложить минт, а не только Settings
         const mintY = emptyY + emptyH + spacing;
-        this.widgets.mintButton = hmUI.createWidget(hmUI.widget.BUTTON, {
-          x: startX, y: mintY, w: buttonWidth, h: BTN_H, radius: BTN_H / 2,
-          normal_color: 0x1f8ed6, press_color: 0x156fa8,
-          text: i18n("settings_action_mint_title"), text_size: px(28), color: 0xffffff,
-          click_func: () => {
-            hapticStrong();
-            push({
-              url: "page/qr",
-              params: JSON.stringify({ url: WEBSITE_URL, ref: "collection_mint" }),
-            });
-          },
-        });
-
-        // Настройки должны быть доступны и при пустой коллекции
-        this.buildHelpIcon(mintY + BTN_H + spacing);
+        this.buildHelpIcon(mintY + spacing);
         return;
       }
 

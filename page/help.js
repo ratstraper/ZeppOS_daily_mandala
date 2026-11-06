@@ -12,6 +12,7 @@ import {
 } from "@zos/page";
 import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
+import { WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("main_help");
 
@@ -19,23 +20,23 @@ const { width, height } = getDeviceInfo();
 const vibrator = new Vibrator();
 
 const UI = {
-  titleX: px(24),
+  titleX: ui.left, //24
   titleY: px(42),
-  titleW: width - px(48),
+  titleW: ui.width, //width - px(80), //48
   titleSize: px(32),
 
   dividerW: px(60),
   dividerH: px(2),
   dividerY: px(124),
 
-  textX: px(24),
+  textX: ui.left, //px(24),
   textY: px(142),
-  textW: width - px(56),
+  textW: ui.width, //width - px(56),
   textSize: px(24),
 
   btnTextSize: px(28),
-  actionX: px(28),
-  actionW: width - px(56),
+  actionX: ui.left, //px(28),
+  actionW: ui.width, //width - px(56),
   actionH: px(72),
   actionY: height - px(104),
 };
@@ -201,7 +202,7 @@ Page(
               url: "page/qr",
               params: JSON.stringify({
                 url: slide.action.url,
-                full: slide.action.full,
+                title: slide.action.title,
                 ref: slide.action.ref,
               }),
             });

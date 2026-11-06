@@ -14,7 +14,7 @@ import {
   pauseDropWristScreenOff,
   resetDropWristScreenOff,
 } from "@zos/display";
-import { TITLE } from "zosLoader:./index.[pf].layout.js";
+import { TITLE, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 import {
   PRACTICE_SHOW,
   COLLECTION_SHOW,
@@ -65,8 +65,9 @@ Page(
 
     build() {
       logger.log(`SHOW.JS`);
-      this.layout = this.createLayout();
+
       this.widgets.loadingAnim = new LoadingAnimationComponent(hmUI);
+      this.layout = this.createLayout();
 
       this.buildTitle();
       this.buildLoadingGroup();
@@ -98,10 +99,9 @@ Page(
     },
 
     createLayout() {
-      const loadingAnimSize = px(48);
+      const loadingAnimSize = this.widgets.loadingAnim.getloadingAnimSize(); //px(48);
       const loadingAnimX = (width - loadingAnimSize) / 2;
-      const loadingAnimY =
-        screenShape === 1 ? (height - loadingAnimSize) / 2 - px(36) : px(140);
+      const loadingAnimY = screenShape === 1 ? (height - loadingAnimSize) / 2 - px(36) : px(140);
       const loadingTextY = loadingAnimY + loadingAnimSize + px(22);
       const resultX = (width - squareSize) / 2;
       const resultY = screenShape === 1 ? (height - squareSize) / 2 : px(40);
@@ -117,7 +117,7 @@ Page(
     buildLoadingGroup() {
       this.widgets.loadingGroup = hmUI.createWidget(hmUI.widget.GROUP, { x: 0, y: 0, w: width, h: height });
       this.widgets.loadingText = this.widgets.loadingGroup.createWidget(hmUI.widget.TEXT, {
-        x: px(48), y: this.layout.loadingTextY, w: width - px(96), h: px(72),
+        x: ui.left, y: this.layout.loadingTextY, w: ui.width, h: px(72),
         color: 0xbdbdbd, text_size: px(24), text_style: hmUI.text_style.WRAP,
         align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V,
         text: i18n("loading_mandala"),
@@ -131,7 +131,7 @@ Page(
         x: this.layout.resultX, y: this.layout.resultY, w: squareSize, h: squareSize, src: "",
       });
       this.widgets.errorText = this.widgets.resultGroup.createWidget(hmUI.widget.TEXT, {
-        x: px(24), y: px(150), w: width - px(48), h: px(200),
+        x: ui.left, y: px(150), w: ui.width, h: px(200), //x: px(24), y: px(150), w: width - px(48), h: px(200), 
         color: ERROR_COLOR, text_size: px(28), text_style: hmUI.text_style.WRAP,
         align_h: hmUI.align.CENTER_H, align_v: hmUI.align.CENTER_V, text: "",
       });
@@ -152,7 +152,12 @@ Page(
 
 
       if (isLoading) {
-        this.widgets.loadingAnim.show(this.layout.loadingAnimX, this.layout.loadingAnimY, this.layout.loadingAnimSize, this.layout.loadingAnimSize);
+        this.widgets.loadingAnim.show(
+          this.layout.loadingAnimX, 
+          this.layout.loadingAnimY, 
+          // this.layout.loadingAnimSize, 
+          // this.layout.loadingAnimSize
+        );
         this.keepScreenAwake(true);
       } else {
         this.widgets.loadingAnim.delete();
