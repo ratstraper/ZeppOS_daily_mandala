@@ -34,6 +34,7 @@ const SLIDES_MAIN = [
       title: i18n("help_main_slide3_action"),
       url: WEBSITE_URL,
       ref: "index_home",
+      cta: CTA.OPEN_INDEX_HOME_QR
     },
   },
 ];
@@ -53,11 +54,12 @@ Page(
       questionImg: null
     },
     build() {
+      hmUI.setStatusBarVisible(false)
       logger.log(`INDEX.JS`);
       logger.log(`DEVICE_WIDTH=${DEVICE_WIDTH}, DEVICE_HEIGHT=${DEVICE_HEIGHT}`);
       this.layout = this.createLayout();
       this.loadNews();
-
+ 
       this.buildTitle();
 
       this.state.menuItems = [
@@ -242,10 +244,8 @@ Page(
 
     // 5. Выделяем логику активации пункта в отдельный метод
     executeAction(item) {
-      logger.log(`Активирован пункт: ${item.title}`);
-
       if (item.id === 'help') {
-        WatchApi.sendCtaEvent(this, CTA.OPEN_MAIN_HELP).catch(() => {});
+        WatchApi.sendCtaEvent(this, CTA.OPEN_INDEX_HOME).catch(() => {});
       }
 
       if (item.id === 'practice' && !AppStorage.getRecord(STORAGE_KEYS.PRACTICE_INTRO_SEEN)) {
@@ -287,53 +287,56 @@ Page(
         })
           .then((data) => {
             const { result = {}, news = [] } = data;
-            if (result === "Ok" && news.length > 0) {
-              let content = ""
-              news.forEach(item => {
-                content += item.body + '\n\n';
-              });
-              const item = news[0];
-              logger.log(`News: ${item.date}, ${item.title}, ${content}`);
+            if (result === "Ok") {
 
-              const alarmId =
-                scheduleNotification({
-                  title: item.title,
-                  content: content,
-                  // vibrate: 1,
-                  //   actions: [
-                  //     {
-                  //       text: i18n("open"),
-                  //       file: "page/index",
-                  //     },
-                  //   ],
+              if(news.length > 0) {
+                let content = ""
+                news.forEach(item => {
+                  content += item.body + '\n\n';
                 });
-              console.log(`Notification scheduled, alarmId=${alarmId}`);
-              /*
-                            const safeTitle = item.title ? String(item.title) : "Новое событие";
-                            const safeContent = "Тестовый текст"; // Оставляем жесткую строку для теста
-                            //Сделать страницу Последнее уведомление на которую будет переход с уведомления.
-                            //На странице показать тот же текст?
-                            //лучше через alarm вывести уведомление на следующие сутки примерно в это же время, если не позднее, или до 9pm
-              
-                            const notifyId = notificationMgr.notify({
-                              title: item.title,
-                              content: item.body,
-                              vibrate: 1,
-                              actions: [
-                                {
-                                  text: "Открыть",
-                                  file: "page/index",
-                                },
-                              ],
-                            });
-              
-                            if (notifyId > 0) {
-                              logger.log(`Уведомление успешно отправлено! ID: ${notifyId}`);
-                            } else {
-                              logger.log("Ошибка: системе не удалось отправить уведомление.");
-                            }
-                            // });
-              */
+                const item = news[0];
+                logger.log(`News: ${item.date}, ${item.title}, ${content}`);
+
+                const alarmId =
+                  scheduleNotification({
+                    title: item.title,
+                    content: content,
+                    // vibrate: 1,
+                    //   actions: [
+                    //     {
+                    //       text: i18n("open"),
+                    //       file: "page/index",
+                    //     },
+                    //   ],
+                  });
+                console.log(`Notification scheduled, alarmId=${alarmId}`);
+                /*
+                              const safeTitle = item.title ? String(item.title) : "Новое событие";
+                              const safeContent = "Тестовый текст"; // Оставляем жесткую строку для теста
+                              //Сделать страницу Последнее уведомление на которую будет переход с уведомления.
+                              //На странице показать тот же текст?
+                              //лучше через alarm вывести уведомление на следующие сутки примерно в это же время, если не позднее, или до 9pm
+                
+                              const notifyId = notificationMgr.notify({
+                                title: item.title,
+                                content: item.body,
+                                vibrate: 1,
+                                actions: [
+                                  {
+                                    text: "Открыть",
+                                    file: "page/index",
+                                  },
+                                ],
+                              });
+                
+                              if (notifyId > 0) {
+                                logger.log(`Уведомление успешно отправлено! ID: ${notifyId}`);
+                              } else {
+                                logger.log("Ошибка: системе не удалось отправить уведомление.");
+                              }
+                              // });
+                */
+              }
               AppStorage.setRecord(STORAGE_KEYS.LAST_NEWS, nowTime);
             } else {
               logger.log("Phone returned error:", data);
@@ -347,6 +350,7 @@ Page(
 
     onDestroy() {
       offKey();
+      // hmUI.setStatusBarVisible(true);
     }
   })
 );

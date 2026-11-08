@@ -60,21 +60,11 @@ msgstr "To mint unique Mandala NFTs for your personal Collection:\nConnect your 
 msgid "help_main_slide3_action"
 msgstr "Visit the website"
 
-msgid "label_next"
-msgstr "Next"
-
 msgid "help_qr_title"
 msgstr "Scan"
 
-//Scan with your phone to open the website.
-msgid "help_qr_intro"
-msgstr "to visit the website"
-
 msgid "help_qr_domain"
 msgstr "mandala.garageno9.site"
-
-msgid "help_qr_text"
-msgstr "Mint your Mandala, connect your wallet, then link this watch."
 
 msgid "common_back"
 msgstr "Back"
@@ -97,29 +87,17 @@ msgstr "Streak - your current series of daily practises.\nBest - your personal r
 msgid "practice_intro_dont_show_again"
 msgstr "Don't show again"
 
-msgid "help_practice_slide3_title"
-msgstr "Notice your"
-
-msgid "help_practice_slide3_text"
-msgstr "Streak - your current series\nof daily sessions.\n\nBest - your personal record\nof streak."
-
 msgid "help_practice_slide3_action"
 msgstr "Start"
 
 
 
 //deep practice help
-msgid "deep_button"
-msgstr "Go deeper"
-
 msgid "deep_practice_slide1_title"
 msgstr "Go Deeper"
 
 msgid "deep_practice_slide1_text"
 msgstr "Daily Mandala helps you build the habit.\n\nYour BirthMandala makes the practice personal."
-
-msgid "deep_practice_slide1_action"
-msgstr "Learn more"
 
 msgid "deep_practice_slide2_title"
 msgstr "One Date"
@@ -207,9 +185,6 @@ msgstr "Loading..."
 
 msgid "empty_collection"
 msgstr "Your Collection is empty. To mint your BirthMandala NFT tap Settings sign below."
-
-msgid "no_wallet_link"
-msgstr "Wallet is not linked.\nLink it on the website\nvia Settings"
 
 // settings page: collection maintenance actions (refresh / mint / unlink)
 msgid "settings_action_refresh_title"

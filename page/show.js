@@ -64,6 +64,7 @@ Page(
     },
 
     build() {
+      hmUI.setStatusBarVisible(false);
       logger.log(`SHOW.JS`);
 
       this.widgets.loadingAnim = new LoadingAnimationComponent(hmUI);

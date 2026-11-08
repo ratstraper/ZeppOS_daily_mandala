@@ -7,7 +7,7 @@ import { onKey, offKey, KEY_EVENT_CLICK } from "@zos/interaction";
 import { BasePage } from "@zeppos/zml/base-page";
 import AppStorage from "../utils/config/storage.js";
 import { WatchApi } from "../utils/watch-api";
-import { STORAGE_KEYS, WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR } from "../utils/config/constants.js";
+import { STORAGE_KEYS, WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR, CTA } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
 import { TITLE, SECONDARY_BUTTON_HEIGHT, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
@@ -36,11 +36,14 @@ const UI = {
 };
 
 function measureText(text, size, textWidth) {
-  return hmUI.getTextLayout(text, {
+  const layout = hmUI.getTextLayout(text, {
     text_size: size,
     text_width: textWidth,
     wrapped: 1,
   });
+  // getTextLayout.height перестаёт расти после ~2 строк (известный баг ZeppOS SDK,
+  // zepp-health/discussions#347) — подстраховываемся через rows.
+  return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
 }
 
 function hapticSoft() {
@@ -62,6 +65,7 @@ Page(
     },
 
     build() {
+      hmUI.setStatusBarVisible(false);
       logger.log(`SETTINGS.JS`);
       this.layout = this.createLayout();
       this.buildTitle();
@@ -261,7 +265,10 @@ Page(
       logger.log("Settings: open mint QR");
       push({
         url: "page/qr",
-        params: JSON.stringify({ title: i18n("settings_action_mint_mandala"), url: WEBSITE_URL + "/mint", ref: "settings_mint" }),
+        params: JSON.stringify({ title: i18n("settings_action_mint_mandala"), 
+          url: WEBSITE_URL + "/mint", 
+          ref: "settings_mint",
+          cta: CTA.OPEN_MINT_QR }),
       });
     },
 

@@ -1,4 +1,4 @@
-import { createWidget, widget, align, text_style, getTextLayout } from "@zos/ui";
+import { setStatusBarVisible, createWidget, widget, align, text_style, getTextLayout } from "@zos/ui";
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
 import { Vibrator } from "@zos/sensor";
@@ -6,9 +6,6 @@ import { getDeviceInfo } from "@zos/device";
 import {
   setScrollMode,
   SCROLL_MODE_SWIPER_HORIZONTAL,
-  getSwiperIndex,
-  onPageScrollDone,
-  offPageScrollDone,
 } from "@zos/page";
 import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
@@ -42,11 +39,14 @@ const UI = {
 };
 
 function measureText(text, size, textWidth) {
-  return getTextLayout(text, {
+  const layout = getTextLayout(text, {
     text_size: size,
     text_width: textWidth,
     wrapped: 1,
   });
+  // getTextLayout.height перестаёт расти после ~2 строк (известный баг ZeppOS SDK,
+  // zepp-health/discussions#347) — подстраховываемся через rows.
+  return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
 }
 
 function hapticSoft() {
@@ -81,6 +81,7 @@ Page(
     },
 
     build() {
+      setStatusBarVisible(false);
       logger.log(`HELP.JS`);
       if (this.state.slides.length === 0) {
         logger.error("No slides provided to help page");
@@ -92,6 +93,15 @@ Page(
         options: {
           width,
           count: this.state.slides.length,
+          modeParams: {
+            on_page: (current) => {
+              if (current === this.state.slides.length - 1) {
+                hapticStrong();
+              } else {
+                hapticSoft();
+              }
+            },
+          },
         },
       });
 
@@ -110,19 +120,9 @@ Page(
       this.state.slides.forEach((slide, index) => {
         this.buildSlide(slide, index);
       });
-
-      onPageScrollDone(() => {
-        const current = getSwiperIndex();
-        if (current === this.state.slides.length - 1) {
-          hapticStrong();
-        } else {
-          hapticSoft();
-        }
-      });
     },
 
     onDestroy() {
-      offPageScrollDone();
       vibrator.stop();
     },
 
@@ -204,6 +204,7 @@ Page(
                 url: slide.action.url,
                 title: slide.action.title,
                 ref: slide.action.ref,
+                cta: slide.action.cta,
               }),
             });
           },

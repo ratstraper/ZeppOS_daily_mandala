@@ -35,6 +35,7 @@ const DEEP_PRACTICE = [
       title: i18n("deep_link_to_mint"),
       url: WEBSITE_URL + "/mint",
       ref: "deep_practice",
+      cta: CTA.OPEN_DEEPER_QR
     },
   },
 ];
@@ -69,6 +70,7 @@ Page(
     },
 
     build() {
+      hmUI.setStatusBarVisible(false);
       logger.log(`PRACTICE.JS`);
       this.layout = this.createLayout();
       this.buildTitle();

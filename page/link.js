@@ -1,10 +1,10 @@
-import { createWidget, deleteWidget, widget, align, text_style } from '@zos/ui'
+import { setStatusBarVisible, createWidget, deleteWidget, widget, align, text_style } from '@zos/ui'
 import { t } from "./../utils/TextUtils.js";
 import { getDeviceInfo } from '@zos/device'
 import { back } from "@zos/router";
 import {
   setPageBrightTime, resetPageBrightTime,
-  pauseDropWristScreenOff, resumeDropWristScreenOff
+  pauseDropWristScreenOff, resetDropWristScreenOff
 } from '@zos/display'
 import { BasePage } from '@zeppos/zml/base-page'
 import { WatchApi } from '../utils/watch-api'
@@ -35,6 +35,7 @@ Page(BasePage({
   state: { widgets: [], timer: null, ticks: 0, maxTicks: 150, busy: false },
 
   build() {
+    setStatusBarVisible(false);
     logger.log(`LINK.JS`);
     this.restore()
   },
@@ -235,6 +236,6 @@ Page(BasePage({
   onDestroy() {
     this.stopPolling()
     resetPageBrightTime()
-    resumeDropWristScreenOff({ duration: 0 })
+    resetDropWristScreenOff()
   }
 }))

@@ -55,11 +55,14 @@ const UI = {
 };
 
 function measureText(text, size, textWidth) {
-  return hmUI.getTextLayout(text, {
+  const layout = hmUI.getTextLayout(text, {
     text_size: size,
     text_width: textWidth,
     wrapped: 1,
   });
+  // getTextLayout.height перестаёт расти после ~2 строк (известный баг ZeppOS SDK,
+  // zepp-health/discussions#347) — подстраховываемся через rows.
+  return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
 }
 
 function hapticSoft() {
@@ -84,6 +87,7 @@ Page(
     },
 
     build() {
+      hmUI.setStatusBarVisible(false);
       logger.log(`PRACTICEINTRO.JS`);
       WatchApi.sendCtaEvent(this, CTA.OPEN_DAILY_HELP).catch(() => {});
 

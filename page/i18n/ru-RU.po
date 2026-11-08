@@ -59,20 +59,11 @@ msgstr "Чтобы отчеканить уникальные NFT-Мандалы 
 msgid "help_main_slide3_action"
 msgstr "Пройти на сайт"
 
-msgid "label_next"
-msgstr "Далее"
-
 msgid "help_qr_title"
 msgstr "Отсканируй"
 
-msgid "help_qr_intro"
-msgstr "чтобы пройти на сайт"
-
 msgid "help_qr_domain"
 msgstr "mandala.garageno9.site"
-
-msgid "help_qr_text"
-msgstr "Отчекань Мандалу, подключи кошелек, затем свяжи эти часы."
 
 msgid "common_back"
 msgstr "Назад"
@@ -99,17 +90,11 @@ msgstr "Начать"
 
 
 //deep practice help
-msgid "deep_button"
-msgstr "Пойти глубже"
-
 msgid "deep_practice_slide1_title"
 msgstr "Пойти глубже"
 
 msgid "deep_practice_slide1_text"
 msgstr "Мандала Дня помогает создать привычку.\n\nМандала Рождения делает твою практику глубоко личной."
-
-msgid "deep_practice_slide1_action"
-msgstr "Дальше"
 
 msgid "deep_practice_slide2_title"
 msgstr "Одна дата"
@@ -198,9 +183,6 @@ msgstr "Загрузка..."
 
 msgid "empty_collection"
 msgstr "Твоя Коллекция пуста. Чтобы отчеканить свою NFT-Мандалу Рождения нажми значок Настройки ниже."
-
-msgid "no_wallet_link"
-msgstr "Кошелек не привязан.\Привяжи его на сайте через Настройки"
 
 // settings page: collection maintenance actions (refresh / mint / unlink)
 msgid "settings_action_refresh_title"

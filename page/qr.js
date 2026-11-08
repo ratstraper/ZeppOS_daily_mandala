@@ -1,4 +1,5 @@
 import {
+  setStatusBarVisible,
   createWidget,
   widget,
   align,
@@ -7,7 +8,7 @@ import {
 } from "@zos/ui";
 import {
   setPageBrightTime, resetPageBrightTime,
-  pauseDropWristScreenOff, resumeDropWristScreenOff
+  pauseDropWristScreenOff, resetDropWristScreenOff
 } from '@zos/display'
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
@@ -53,11 +54,14 @@ const UI = {
 
 
 function measureText(text, size, textWidth) {
-  return getTextLayout(text, {
+  const layout = getTextLayout(text, {
     text_size: size,
     text_width: textWidth,
     wrapped: 1,
   });
+  // getTextLayout.height перестаёт расти после ~2 строк (известный баг ZeppOS SDK,
+  // zepp-health/discussions#347) — подстраховываемся через rows.
+  return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
 }
 
 function hapticSoft() {
@@ -80,6 +84,7 @@ Page(
       title: i18n("help_qr_title"),
       url: "https://mandala.garageno9.site",
       ref: null,
+      cta: CTA.OPEN_QR,
     },
 
     onInit(params) {
@@ -89,14 +94,16 @@ Page(
         if (parsed?.title) this.state.title = parsed.title;
         if (parsed?.url) this.state.url = parsed.url;
         if (parsed?.ref) this.state.ref = parsed.ref;
+        if (parsed?.cta) this.state.cta = parsed.cta;
       } catch (e) {
         logger.log("params parse failed", e);
       }
     },
 
     build() {
+      setStatusBarVisible(false);
       logger.log(`QR.JS`);
-      WatchApi.sendCtaEvent(this, CTA.OPEN_QR).catch(() => {});
+      WatchApi.sendCtaEvent(this, this.state.cta).catch(() => {});
       const domain = i18n("help_qr_domain");
       this.showQr(this.state.title, withRef(this.state.url, this.state.ref), domain);
     },
@@ -105,13 +112,15 @@ Page(
       setPageBrightTime({ brightTime: 600000 })       // держим экран, пока висит QR
       pauseDropWristScreenOff({ duration: 600000 })
       const size = Math.floor(Math.min(width, height) * 0.45);
+      const titleY = Math.floor(height * 0.05);
+      const titleLayout = measureText(title, 28, width);
       createWidget(widget.TEXT, {
-        x: 0, 
-        y: Math.floor(height * 0.05), 
-        w: width, 
-        h: 40,
-        color: 0xffffff, 
-        text_size: 28, 
+        x: 0,
+        y: titleY,
+        w: width,
+        h: Math.max(40, titleLayout.height),
+        color: 0xffffff,
+        text_size: 28,
         text_style: text_style.WRAP,
         align_h: align.CENTER_H,
         align_v: align.TOP,
@@ -120,7 +129,9 @@ Page(
 
       const qrPad = px(10)
       const bgX = Math.floor((width - size) / 2);
-      let bgY = Math.floor(height * 0.17);
+      // Длинный title (приходит с сервера, длина не ограничена) может
+      // перенестись на 2+ строки — тогда QR сдвигается вниз, чтобы не перекрыться.
+      let bgY = Math.max(Math.floor(height * 0.17), titleY + titleLayout.height + px(8));
   
       createWidget(widget.QRCODE, {
         content: url,
@@ -170,7 +181,7 @@ Page(
     onDestroy() {
       vibrator.stop();
       resetPageBrightTime()
-      resumeDropWristScreenOff({ duration: 0 }) 
+      resetDropWristScreenOff() 
     },
   })
 );
