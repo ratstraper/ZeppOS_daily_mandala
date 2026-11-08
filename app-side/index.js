@@ -1,6 +1,5 @@
 import { BaseSideService } from "@zeppos/zml/base-side";
 
-const logger = Logger.getLogger('mandala-day')
 const WEBSITE_URL = "https://mandala.garageno9.site"
 const PRACTICE_SHOW = 1;
 
@@ -8,7 +7,7 @@ const PRACTICE_SHOW = 1;
  * for emulator testing, you can use a direct URL to an image, for example:
  */
 async function fetchEmulatorData(day, info, size, res) {
-  logger.log('Starting file download...', day);
+  console.log('Starting file download...', day);
   try {
     const response = await fetch(`https://mandala.garageno9.site/api/watch/${day}/${size}`, {
       method: 'GET',
@@ -19,7 +18,7 @@ async function fetchEmulatorData(day, info, size, res) {
     });
 
     if (!response.ok) {
-      logger.log('Error downloading in Side Service:', response.status, response.statusText);
+      console.log('Error downloading in Side Service:', response.status, response.statusText);
       res(null, { result: `Error: Download failed ${response.status}, ${response.statusText}` });
       return;
     }
@@ -38,7 +37,7 @@ async function fetchEmulatorData(day, info, size, res) {
     });
 
   } catch (err) {
-    logger.log('Error during fetch:', err);
+    console.log('Error during fetch:', err);
     res(null, { result: `Error: Fetch failed ${err}`, });
   }
 }
@@ -47,7 +46,7 @@ async function fetchEmulatorData(day, info, size, res) {
  * For smartphone
  */
 async function openMandala(request, res) {
-  logger.log('openMandala:', request);
+  console.log('openMandala:', request);
   const response = await fetch({
     url: `${WEBSITE_URL}/api/watch/repeat/${request.day}/${request.size}`,
     method: 'GET',
@@ -64,7 +63,7 @@ async function openMandala(request, res) {
 function getMandala(request, res) {
 
   const filename = request.type === PRACTICE_SHOW ? 'mandaladay.png' : `${request.day}.png`;
-  logger.log('Starting file download...', filename);
+  console.log('Starting file download...', filename);
   const downloadTask = network.downloader.downloadFile({
     url: `${WEBSITE_URL}/api/watch/${request.day}/${request.size}`,
     timeout: 60000,
@@ -78,7 +77,7 @@ function getMandala(request, res) {
   });
 
   downloadTask.onSuccess = (event) => {
-    logger.log('The file has been successfully downloaded by the phone');
+    console.log('The file has been successfully downloaded by the phone');
 
     image.convert({
       filePath: event.filePath,
@@ -97,26 +96,26 @@ function getMandala(request, res) {
       // ВАЖНО: Слушаем статус отправки файла!
       fileObject.on('change', (transferEvent) => {
         if (transferEvent.data.readyState === 'transferred') {
-          logger.log('Success: The file is physically on the watch disk');
-          logger.log(transferEvent);
+          console.log('Success: The file is physically on the watch disk');
+          console.log(transferEvent);
 
           // Возвращаем ответ в ZML ТОЛЬКО после успешной доставки файла
           res(null, { result: "Ok", filePath: result.targetFilePath });
 
         } else if (transferEvent.data.readyState === 'error') {
-          logger.log('Error during Bluetooth transfer');
+          console.log('Error during Bluetooth transfer');
           res(null, { result: `Error: Bluetooth transfer failed` });
         }
       });
 
     }).catch((err) => {
-      logger.log('Error during conversion:', err);
+      console.log('Error during conversion:', err);
       res(null, { result: `Error: Conversion failed ${err}`, });
     });
   };
 
   downloadTask.onFail = (event) => {
-    logger.log('Error downloading in Side Service:', event.code, event.message);
+    console.log('Error downloading in Side Service:', event.code, event.message);
     res(null, { result: `Error: Download failed ${event.code}, ${event.message}` });
   };
 
@@ -126,20 +125,20 @@ function getMandala(request, res) {
     console.log(ev.loaded)
   }
   downloadTask.onCancel = (event) => {
-    logger.log('Download canceled by the phone');
+    console.log('Download canceled by the phone');
     res(null, { result: "Error: Download canceled" });
   }
   downloadTask.onTimeout = (event) => {
-    logger.log('Download timed out');
+    console.log('Download timed out');
     res(null, { result: "Error: Download timed out" });
   }
   downloadTask.onComplete = (event) => {
-    logger.log('Download task completed');
+    console.log('Download task completed');
   }
 }
 
 async function getNews(request, res) {
-  logger.log('getNews:', request);
+  console.log('getNews:', request);
 
   const response = await fetch({
     url: `${WEBSITE_URL}/api/watch/zepp/news/${request.time}/${request.region}`,
@@ -156,7 +155,7 @@ async function getNews(request, res) {
 
 // ── Привязка часов к кошельку ─────────────────────────────────────
 async function linkApi(path, request, extraBody) {
-  logger.log('linkApi:', path, request, extraBody);
+  console.log('linkApi:', path, request, extraBody);
 
   const response = await fetch({
     url: `${WEBSITE_URL}${path}`,
@@ -177,10 +176,10 @@ async function getCollection(request, res) {
   // res(null, {result: "NO_LINK"});
   // res(null, { result: "Ok", collection: [{ "day": "15011939", "name": "Ivan", "id": 15011939 }, { "day": "11111111", "name": "Thering", "id": 11111111 }, { "day": "31052000", "name": "End of spring", "id": 31052000 }, { "day": "26081910", "name": "Mary Teresa Bojaxhiu", "id": 26081910 }] });
   try { 
-    logger.log('getCollection:', request,);
+    console.log('getCollection:', request,);
     res(null, await linkApi('/api/watch/collection', request, {})); 
   }
-  catch (err) { logger.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+  catch (err) { console.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
 async function linkStart(request, res) {
@@ -189,38 +188,38 @@ async function linkStart(request, res) {
     if (data && data.token) data.qr = `${WEBSITE_URL}/link/add/${data.token}`;
     res(null, data);
   } catch (err) {
-    logger.log('linkStart error:', err);
+    console.log('linkStart error:', err);
     res(null, { status: 'ERROR', error: 'network' });
   }
 }
 
 async function linkStatus(request, res) {
   try { 
-    logger.log('linkStatus:', request,);
+    console.log('linkStatus:', request,);
     res(null, await linkApi('/device/link-status', request, {})); 
   }
-  catch (err) { logger.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+  catch (err) { console.log('linkStatus error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
 async function linkConfirm(request, res) {
   try { res(null, await linkApi('/device/link-confirm', request, { wallet: request.wallet })); }
-  catch (err) { logger.log('linkConfirm error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+  catch (err) { console.log('linkConfirm error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
 async function linkReject(request, res) {
   try { res(null, await linkApi('/device/link-reject', request, {})); }
-  catch (err) { logger.log('linkReject error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+  catch (err) { console.log('linkReject error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
 async function unlink(request, res) {
   try { res(null, await linkApi('/device/unlink', request, {})); }
-  catch (err) { logger.log('unlink error:', err); res(null, { status: 'ERROR', error: 'network' }); }
+  catch (err) { console.log('unlink error:', err); res(null, { status: 'ERROR', error: 'network' }); }
 }
 
 // ── Фиксация CTA-меток для аналитики на сайте ──────────────────────
 async function sendCtaEvent(request, res) {
   try {
-    logger.log('sendCtaEvent:', request.cta);
+    console.log('sendCtaEvent:', request.cta);
     const response = await fetch({
       url: `${WEBSITE_URL}/api/watch/event/${request.cta}`,
       method: 'GET',
@@ -232,7 +231,7 @@ async function sendCtaEvent(request, res) {
     });
     res(null, response.body);
   } catch (err) {
-    logger.log('sendCtaEvent error:', err);
+    console.log('sendCtaEvent error:', err);
     res(null, { status: 'ERROR', error: 'network' });
   }
 }
@@ -241,11 +240,11 @@ async function sendCtaEvent(request, res) {
 AppSideService(
   BaseSideService({
     onInit() {
-      logger.log('Side Service successfully started!');
+      console.log('Side Service successfully started!');
     },
     onDestroy() { },
     onRequest(req, res) {
-      logger.log("===============> Received method:", req.method);
+      console.log("===============> Received method:", req.method);
       if (req.method === "GET_MANDALA") {
         getMandala(req.request, res);
         // fetchEmulatorData(req.day, req.info, req.size, res);

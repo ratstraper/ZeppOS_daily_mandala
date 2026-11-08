@@ -152,7 +152,11 @@ Page(BasePage({
     this.clear()
     setPageBrightTime({ brightTime: 600000 })       // держим экран, пока висит QR
     pauseDropWristScreenOff({ duration: 600000 })
-    const size = Math.floor(Math.min(W, H) * 0.55)
+    // QR с длинным url (токен привязки) виджет QRCODE обрезает, если ему не
+    // хватает пикселей под плотность паттерна — берём максимум доступного места
+    // между заголовком (H*0.17) и подписью (H*0.78), а не плоский процент экрана.
+    // const size = Math.floor(Math.min(W, H) * 0.55)
+    const size = Math.min(Math.floor(H * 0.58), Math.floor(W * 0.9))
     const title = t("scan_to_link")
     this.add(widget.TEXT, {
       x: 0, y: Math.floor(H * 0.05), w: W, h: 40,
@@ -174,6 +178,7 @@ Page(BasePage({
       bg_h: size,
       bg_radius: px(14),
     })
+    
     this.add(widget.TEXT, {
       x: 0, y: Math.floor(H * 0.78), w: W, h: 60,
       text: t("waiting_wallet"), color: 0x888888, text_size: 22,
