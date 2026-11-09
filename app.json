@@ -1,7 +1,10 @@
 {
   "configVersion": "v3",
+  "packageInfo": {
+    "mode": "preview"
+  },  
   "app": {
-    "appId": 27422,
+    "appId": 1135545,
     "appName": "Daily Mandala",
     "appType": "app",
     "version": {
@@ -102,36 +105,6 @@
   "i18n": {
     "en-US": {
       "appName": "Daily Mandala"
-    },
-    "pt-BR": {
-      "appName": "Mandala Diária"
-    },
-    "vi-VN": {
-      "appName": "Mandala Hằng Ngày"
-    },
-    "id-ID": {
-      "appName": "Mandala Harian"
-    },
-    "ru-RU": {
-      "appName": "Мандала дня"
-    },
-    "tr-TR": {
-      "appName": "Günlük Mandala"
-    },
-    "es-ES": {
-      "appName": "Mandala Diaria"
-    },
-    "uk-UA": {
-      "appName": "Мандала дня"
-    },
-    "de-DE": {
-      "appName": "Tägliches Mandala"
-    },
-    "it-IT": {
-      "appName": "Mandala del Giorno"
-    },
-    "zh-CN": {
-      "appName": "每日曼荼罗"
     }
   },
   "defaultLanguage": "en-US"
