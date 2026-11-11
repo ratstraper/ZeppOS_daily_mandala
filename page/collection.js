@@ -14,7 +14,7 @@ import { NORMAL_COLOR, PRESSED_COLOR, WEBSITE_URL, COLLECTION_SHOW, STORAGE_KEYS
 
 import { width, height, screenShape, getDateFormatString } from "../utils/config/device.js";
 
-import { TITLE, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
+import { TITLE, SECONDARY_BUTTON_HEIGHT, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
 const SCREEN_LOADING = "SCREEN_LOADING";
 const SCREEN_RESULT = "SCREEN_RESULT";
@@ -23,7 +23,7 @@ const SCREEN_NOT_LINKED = "SCREEN_NOT_LINKED";
 
 const HELP_ICON_W = px(64);
 const HELP_ICON_H = px(104);
-const BTN_H = px(72);
+const BTN_H = SECONDARY_BUTTON_HEIGHT;
 
 const logger = Logger.getLogger("mandala_day");
 const vibrator = new Vibrator();
@@ -50,8 +50,8 @@ function measureText(text, size, textWidth) {
 
 function hapticStrong() {
   vibrator.stop();
-  vibrator.start(25);
-  setTimeout(() => vibrator.stop(), 180);
+  vibrator.start(23);
+  setTimeout(() => vibrator.stop(), 80);
 }
 
 Page(

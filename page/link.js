@@ -162,9 +162,9 @@ Page(BasePage({
       x: 0, y: Math.floor(H * 0.05), w: W, h: 40,
       text: title, color: 0xffffff, text_size: 28, align_h: align.CENTER_H
     })
-      const qrPad = px(10)
-      const bgX = Math.floor((W - size) / 2);
-      const bgY = Math.floor(H * 0.17);
+    const qrPad = px(10)
+    const bgX = Math.floor((W - size) / 2);
+    const bgY = Math.floor(H * 0.17);
 
     this.add(widget.QRCODE, {
       content: url,

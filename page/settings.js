@@ -26,8 +26,8 @@ const UI = {
 
   descSize: px(22),
 
-  btnH: SECONDARY_BUTTON_HEIGHT, //px(72),   
-  btnRadius: btnH / 2, //px(36),
+  btnH: SECONDARY_BUTTON_HEIGHT,
+  btnRadius: SECONDARY_BUTTON_HEIGHT / 2,
   btnTextSize: px(28),
 
   gapDescToBtn: px(16),

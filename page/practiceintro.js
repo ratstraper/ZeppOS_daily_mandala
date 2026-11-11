@@ -71,12 +71,6 @@ function hapticSoft() {
   setTimeout(() => vibrator.stop(), 80);
 }
 
-function hapticStrong() {
-  vibrator.stop();
-  vibrator.start(25);
-  setTimeout(() => vibrator.stop(), 180);
-}
-
 Page(
   BasePage({
     state: {
@@ -140,7 +134,7 @@ Page(
         text: i18n("help_practice_slide3_action"),
         text_size: UI.btnTextSize, color: 0xffffff,
         click_func: () => {
-          hapticStrong();
+          hapticSoft();
           this.finishIntro();
         },
       });

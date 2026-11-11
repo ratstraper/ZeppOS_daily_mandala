@@ -18,7 +18,7 @@ import { back } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
 import { WatchApi } from "../utils/watch-api";
 import { CTA } from "../utils/config/constants.js";
-import { WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
+import { SECONDARY_BUTTON_HEIGHT, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 const logger = Logger.getLogger("help_qr");
 
 const { width, height } = getDeviceInfo();
@@ -48,7 +48,7 @@ const UI = {
 
   backX: ui.left, //px(36),
   backW: ui.width, //width - px(72),
-  backH: px(72),
+  backH: SECONDARY_BUTTON_HEIGHT,
   backY: height - px(94),
 };
 

@@ -310,32 +310,6 @@ Page(
                     //   ],
                   });
                 console.log(`Notification scheduled, alarmId=${alarmId}`);
-                /*
-                              const safeTitle = item.title ? String(item.title) : "Новое событие";
-                              const safeContent = "Тестовый текст"; // Оставляем жесткую строку для теста
-                              //Сделать страницу Последнее уведомление на которую будет переход с уведомления.
-                              //На странице показать тот же текст?
-                              //лучше через alarm вывести уведомление на следующие сутки примерно в это же время, если не позднее, или до 9pm
-                
-                              const notifyId = notificationMgr.notify({
-                                title: item.title,
-                                content: item.body,
-                                vibrate: 1,
-                                actions: [
-                                  {
-                                    text: "Открыть",
-                                    file: "page/index",
-                                  },
-                                ],
-                              });
-                
-                              if (notifyId > 0) {
-                                logger.log(`Уведомление успешно отправлено! ID: ${notifyId}`);
-                              } else {
-                                logger.log("Ошибка: системе не удалось отправить уведомление.");
-                              }
-                              // });
-                */
               }
               AppStorage.setRecord(STORAGE_KEYS.LAST_NEWS, nowTime);
             } else {

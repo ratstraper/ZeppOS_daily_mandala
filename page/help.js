@@ -7,9 +7,10 @@ import {
   setScrollMode,
   SCROLL_MODE_SWIPER_HORIZONTAL,
 } from "@zos/page";
+import { onKey, offKey, KEY_SELECT, KEY_EVENT_CLICK } from "@zos/interaction";
 import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
-import { WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
+import { SECONDARY_BUTTON_HEIGHT, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("main_help");
 
@@ -34,7 +35,7 @@ const UI = {
   btnTextSize: px(28),
   actionX: ui.left, //px(28),
   actionW: ui.width, //width - px(56),
-  actionH: px(72),
+  actionH: SECONDARY_BUTTON_HEIGHT,
   actionY: height - px(104),
 };
 
@@ -49,22 +50,17 @@ function measureText(text, size, textWidth) {
   return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
 }
 
-function hapticSoft() {
+function hapticStrong() {
   vibrator.stop();
   vibrator.start(23);
   setTimeout(() => vibrator.stop(), 80);
-}
-
-function hapticStrong() {
-  vibrator.stop();
-  vibrator.start(25);
-  setTimeout(() => vibrator.stop(), 180);
 }
 
 Page(
   BasePage({
     state: {
       slides: [],
+      currentIndex: 0,
     },
 
     onInit(params) {
@@ -95,13 +91,22 @@ Page(
           count: this.state.slides.length,
           modeParams: {
             on_page: (current) => {
+              this.state.currentIndex = current;
               if (current === this.state.slides.length - 1) {
                 hapticStrong();
-              } else {
-                hapticSoft();
               }
             },
           },
+        },
+      });
+
+      onKey({
+        callback: (key, keyEvent) => {
+          if (key !== KEY_SELECT || keyEvent !== KEY_EVENT_CLICK) return false;
+          const slide = this.state.slides[this.state.currentIndex];
+          if (!slide || !slide.action) return false;
+          this.openAction(slide.action);
+          return true;
         },
       });
 
@@ -123,7 +128,22 @@ Page(
     },
 
     onDestroy() {
+      offKey();
       vibrator.stop();
+    },
+
+    openAction(action) {
+      hapticStrong();
+      logger.log("open QR page", action.url);
+      push({
+        url: "page/qr",
+        params: JSON.stringify({
+          url: action.url,
+          title: action.title,
+          ref: action.ref,
+          cta: action.cta,
+        }),
+      });
     },
 
     buildSlide(slide, index) {
@@ -195,19 +215,7 @@ Page(
           text: i18n(slide.action.labelKey),
           text_size: UI.btnTextSize,
           color: 0xffffff,
-          click_func: () => {
-            hapticStrong();
-            logger.log("open QR page", slide.action.url);
-            push({
-              url: "page/qr",
-              params: JSON.stringify({
-                url: slide.action.url,
-                title: slide.action.title,
-                ref: slide.action.ref,
-                cta: slide.action.cta,
-              }),
-            });
-          },
+          click_func: () => this.openAction(slide.action),
         });
       }
     },

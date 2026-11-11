@@ -11,7 +11,7 @@ export const PRACTICE_NORMAL_COLOR = 0x0E8CE6;
 export const PRACTICE_PRESSED_COLOR = 0x0B72BD;
 export const PRACTICE_SELECTED_COLOR = 0x3397de;
 
-export const SECONDARY_BUTTON_HEIGHT = px(100);
+export const SECONDARY_BUTTON_HEIGHT = px(72);
 
 export const WORK_SCREEN = {
   left: px(40),
