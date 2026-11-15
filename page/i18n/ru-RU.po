@@ -79,7 +79,7 @@ msgid "about_practice_slide_title2"
 msgstr "Отслеживай"
 
 msgid "about_practice_slide_text2"
-msgstr "Серия - текущая серия ежедневных практик.\nЛучший - твой личный рекорд в сериях."
+msgstr "Серия - текущая серия ежедневных практик.\nЛучший - твой личный рекорд в сериях.\n"
 
 msgid "practice_intro_dont_show_again"
 msgstr "Больше не показывать"

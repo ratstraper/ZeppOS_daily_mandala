@@ -156,13 +156,16 @@ Page(BasePage({
     // хватает пикселей под плотность паттерна — берём максимум доступного места
     // между заголовком (H*0.17) и подписью (H*0.78), а не плоский процент экрана.
     // const size = Math.floor(Math.min(W, H) * 0.55)
-    const size = Math.min(Math.floor(H * 0.58), Math.floor(W * 0.9))
-    const title = t("scan_to_link")
+    const a = px(Math.min(Math.floor(H * 0.58), Math.floor(W * 0.9)));
+    // const size = a - (a % 10);
+    const size = Math.floor(Math.min(H, W) * 0.45);
+    const title = t("scan_to_link");
     this.add(widget.TEXT, {
-      x: 0, y: Math.floor(H * 0.05), w: W, h: 40,
+      x: 0, y: Math.floor(H * 0.05), w: W, h: px(40),
       text: title, color: 0xffffff, text_size: 28, align_h: align.CENTER_H
-    })
-    const qrPad = px(10)
+    });
+    const qrPad = px(10);
+    const qrSize = size - qrPad * 2;
     const bgX = Math.floor((W - size) / 2);
     const bgY = Math.floor(H * 0.17);
 
@@ -170,17 +173,17 @@ Page(BasePage({
       content: url,
       x: bgX + qrPad, 
       y: bgY + qrPad, 
-      w: size - qrPad * 2, 
-      h: size - qrPad * 2,
+      w: qrSize, 
+      h: qrSize,
       bg_x: bgX,
       bg_y: bgY,
       bg_w: size,
       bg_h: size,
       bg_radius: px(14),
-    })
+    });
     
     this.add(widget.TEXT, {
-      x: 0, y: Math.floor(H * 0.78), w: W, h: 60,
+      x: 0, y: Math.floor(H * 0.78), w: W, h: px(60),
       text: t("waiting_wallet"), color: 0x888888, text_size: 22,
       align_h: align.CENTER_H, text_style: text_style.WRAP
     })
@@ -189,7 +192,7 @@ Page(BasePage({
   showConfirm(wallet) {
     this.clear()
     this.add(widget.TEXT, {
-      x: 0, y: Math.floor(H * 0.10), w: W, h: 140,
+      x: 0, y: Math.floor(H * 0.10), w: W, h: px(150),
       text: t("link_collection", wallet),
       color: 0xffffff, text_size: 26,
       align_h: align.CENTER_H, text_style: text_style.WRAP

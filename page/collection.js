@@ -10,6 +10,7 @@ import AppStorage from '../utils/config/storage.js';
 import Profile from "../utils/config/profile.js";
 import LoadingAnimationComponent from '../utils/components/LoadingAnimationComponent.js';
 import { WatchApi } from "../utils/watch-api";
+import { measureText } from "../utils/TextUtils.js";
 import { NORMAL_COLOR, PRESSED_COLOR, WEBSITE_URL, COLLECTION_SHOW, STORAGE_KEYS, CTA } from "../utils/config/constants.js";
 
 import { width, height, screenShape, getDateFormatString } from "../utils/config/device.js";
@@ -36,17 +37,6 @@ const vibrator = new Vibrator();
  *  - привязан, в коллекции есть мандалы -> список + кнопка Settings;
  *  - привязан, но коллекция пуста -> empty_collection + кнопка Mint + кнопка Settings.
  */
-
-function measureText(text, size, textWidth) {
-  const layout = hmUI.getTextLayout(text, {
-    text_size: size,
-    text_width: textWidth,
-    wrapped: 1,
-  });
-  // getTextLayout.height перестаёт расти после ~2 строк (известный баг ZeppOS SDK,
-  // zepp-health/discussions#347) — подстраховываемся через rows.
-  return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
-}
 
 function hapticStrong() {
   vibrator.stop();

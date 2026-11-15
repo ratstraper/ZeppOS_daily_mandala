@@ -1,4 +1,4 @@
-import { setStatusBarVisible, createWidget, widget, align, text_style, getTextLayout } from "@zos/ui";
+import { setStatusBarVisible, createWidget, widget, align, text_style } from "@zos/ui";
 import { getText as i18n } from "@zos/i18n";
 import { log as Logger, px } from "@zos/utils";
 import { Vibrator } from "@zos/sensor";
@@ -10,6 +10,7 @@ import {
 import { onKey, offKey, KEY_SELECT, KEY_EVENT_CLICK } from "@zos/interaction";
 import { push } from "@zos/router";
 import { BasePage } from "@zeppos/zml/base-page";
+import { measureText } from "../utils/TextUtils.js";
 import { SECONDARY_BUTTON_HEIGHT, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
 
 const logger = Logger.getLogger("main_help");
@@ -38,17 +39,6 @@ const UI = {
   actionH: SECONDARY_BUTTON_HEIGHT,
   actionY: height - px(104),
 };
-
-function measureText(text, size, textWidth) {
-  const layout = getTextLayout(text, {
-    text_size: size,
-    text_width: textWidth,
-    wrapped: 1,
-  });
-  // getTextLayout.height перестаёт расти после ~2 строк (известный баг ZeppOS SDK,
-  // zepp-health/discussions#347) — подстраховываемся через rows.
-  return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
-}
 
 function hapticStrong() {
   vibrator.stop();

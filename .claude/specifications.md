@@ -28,13 +28,16 @@ and where the exceptions/inconsistencies are.
 
 ## 2. Architecture
 
-Standard three-target ZeppOS app (`app.json` → `targets.common.module`):
+Three **roles** that run in different places:
 
-| Target | Path | Runs on | Role |
+| Role | Path | Runs on | Purpose |
 |---|---|---|---|
 | Device app | `page/*.js` + `app.js` | watch | UI, navigation, local storage, state machines |
 | Companion service | `app-side/index.js` | phone (BLE companion) | network calls, file download/convert/transfer |
 | App service | `app-service/delayedNewsService.js` | watch, alarm-triggered | fires a local notification some time after being scheduled |
+
+These three roles are not `app.json` *targets* — see below, `targets` is a separate,
+shape-driven split that each contains all three roles identically.
 
 Communication device ⇄ companion is via `this.request({ method, request })` from a page
 (ZML `BasePage`), routed on the phone side by `onRequest(req, res)` matching on
@@ -42,25 +45,48 @@ Communication device ⇄ companion is via `this.request({ method, request })` fr
 
 ### 2.1 Runtime / platform facts
 - `configVersion: v3`, `apiVersion` target `4.2`, min `3.0`.
-- Two device shapes: round (`st:"r"`, design width 480) and square (`st:"s"`, design width 390).
-  Per-shape layout is implemented via ZeppOS's `zosLoader:./index.[pf].layout.js` mechanism:
-  `page/index.r.layout.js` (round) and `page/index.s.layout.js` (square) both export the
-  same symbol set — `TITLE`, `FETCH_RESULT_TEXT`, `MENU_BUTTON`, `SECONDARY_BUTTON_HEIGHT`,
-  and `PRACTICE_NORMAL_COLOR`/`PRACTICE_PRESSED_COLOR`/`PRACTICE_SELECTED_COLOR` — consumed
-  by pages via `import { ... } from "zosLoader:./index.[pf].layout.js"`. Both files parse
-  cleanly (`node --check` on each) and are kept in sync; `page/practice.js` is the one
+- **`app.json` declares two real targets, `round` and `square`** (not one `common` target
+  as earlier versions of this app had) — each with its own `platforms: [{st: "r"}]` /
+  `[{st: "s"}]` filter and its own `designWidth` (480 / 390), and otherwise an **identical**
+  `module` block (same `page.pages` list, same `app-side.path`, same
+  `app-service.services`, same `window` config) copy-pasted into both. This is the
+  ZeppOS-documented way to give two device-shape families their own correct `px()` scaling
+  base in one app: `designWidth` is a **target-level** field only — there is no
+  per-`platforms`-entry override. (A prior single-`common`-target version of this file tried
+  to express that override with a non-standard `dw` key on each `platforms[]` entry; that
+  key does not exist in the ZeppOS v3 schema, so it was silently ignored and **every**
+  device — round and square alike — was scaled against the one top-level `designWidth: 480`.
+  This happened to be harmless for round devices [480 is also round's own default] but
+  under-scaled every square device relative to its intended 390 baseline. Fixed by splitting
+  into the two real targets described above.)
+- **Asset directories are named after the target, not a fixed `common` prefix**:
+  `assets/round.r/` and `assets/square.s/` (icons, `icon.png`, loading-animation frames —
+  renamed from `assets/common.r/`/`assets/common.s/` when the targets above were split out of
+  the old single `common` target). The build fails with *"The icon in app.json is empty or
+  the image does not exist"* if a target's name and its asset directory's `<name>.<shape>`
+  prefix ever drift apart — keep them in lock-step if either is renamed again.
+- Per-shape **layout constants** (distinct from the `targets` split above, and older — this
+  mechanism predates the round/square target split and is unaffected by it) are implemented
+  via ZeppOS's `zosLoader:./index.[pf].layout.js` loader: `page/index.r.layout.js` (round)
+  and `page/index.s.layout.js` (square) both export the same symbol set — `TITLE`,
+  `FETCH_RESULT_TEXT`, `MENU_BUTTON`, `SECONDARY_BUTTON_HEIGHT` (now `px(72)` on both — see
+  §5.1), and `PRACTICE_NORMAL_COLOR`/`PRACTICE_PRESSED_COLOR`/`PRACTICE_SELECTED_COLOR` —
+  consumed by pages via `import { ... } from "zosLoader:./index.[pf].layout.js"`. Both files
+  parse cleanly (`node --check` on each) and are kept in sync; `page/practice.js` is the one
   consumer of the `PRACTICE_*` colors and imports them under those names on both platforms.
-  (Previously the two layout files disagreed — round exported plain `NORMAL_COLOR`/
-  `PRESSED_COLOR`/`SELECTED_COLOR` and had a duplicate-declaration `SyntaxError`, square was
-  missing the colors entirely. Both are fixed: resolved.)
 - Permissions declared in `app.json`: `data:os.device.info`, `device:os.alarm`,
   `device:os.local_storage`, `device:os.network`, `device:os.notification`,
   `data:user.info`.
 - `app.json` declares 11 locales for the app *name* (`en-US`, `pt-BR`, `vi-VN`, `id-ID`,
   `ru-RU`, `tr-TR`, `es-ES`, `uk-UA`, `de-DE`, `it-IT`, `zh-CN`), default `en-US`. In
   practice, **only `en-US` and `ru-RU` have full `.po` translation files** for
-  `page/i18n/`; `app-side/i18n/` only has a placeholder `en-US.po`. All other declared
-  locales fall back to `en-US` strings for anything beyond the app name.
+  `page/i18n/`, and both now carry the same key set (a handful of keys that existed only
+  in `en-US.po` — `help_practice_slide3_title`/`_text` — and several unused-anywhere keys —
+  `help_qr_intro`, `help_qr_text`, `deep_button`, `deep_practice_slide1_action`,
+  `label_next`, `no_wallet_link` — have been deleted from both files). `app-side/i18n/`'s
+  `en-US.po` is now **empty** (its only entry, a placeholder `"example"` key, was unused —
+  `app-side/index.js` doesn't use i18n at all, see §7). All locales other than `en-US`/
+  `ru-RU` fall back to `en-US` strings for anything beyond the app name.
 
 ---
 
@@ -117,30 +143,37 @@ should be treated as the project's *de facto* interaction contract:
 ### 4.1 `page/index.js` — Main menu
 - **Role**: navigation hub, first screen.
 - **Menu items**: Practice → `page/practice` (first visit only: see the onboarding rule
-  below), Collection → `page/collection` (gated, see below), plus a persistent help icon →
-  `page/help` with `SLIDES_MAIN` (3 slides, last one has a "visit website" action →
-  `page/qr`, tagged `ref: "main_home"` — see §5.6).
-- **Rule — Collection gating**: `executeAction()` checks
-  `AppStorage.getRecord(STORAGE_KEYS.LINKED)`. If falsy, tapping Collection routes to
-  `page/nolink` instead of `page/collection`.
+  below), Collection → `page/collection` (no gating — see §4.4, `page/nolink.js` is deleted
+  and `page/collection.js` alone decides what to show), plus a persistent help icon →
+  `page/help` with `SLIDES_MAIN` (3 slides; the last one has a "visit website" `action`:
+  `{ labelKey: "help_main_slide3_action", title: i18n("help_main_slide3_action"), url:
+  WEBSITE_URL, ref: "index_home", cta: CTA.OPEN_INDEX_HOME_QR }` — see §5.6/§4.6 for the
+  current `action` object shape, which no longer has a `full` field).
 - **Rule — Practice first-run onboarding**: `executeAction()` checks
   `AppStorage.getRecord(STORAGE_KEYS.PRACTICE_INTRO_SEEN)` when `item.id === 'practice'`.
   If falsy, pushes `page/practiceintro` instead of going to `page/practice` directly — and
   **keeps doing so on every tap** until the user dismisses it for good (see §4.1a), not
   just the first time. Once the flag is set, every later tap on Practice goes straight to
   `page/practice`.
-- **CTA tracking**: `executeAction()` fires `CTA.OPEN_MAIN_HELP` (§5.6) whenever
+- **CTA tracking**: `executeAction()` fires `CTA.OPEN_INDEX_HOME` (§5.6) whenever
   `item.id === 'help'` — this one spot covers both touch and physical-`KEY_SELECT`
-  activation, since both paths call `executeAction()`.
+  activation, since both paths call `executeAction()`. (A separate, distinct CTA,
+  `OPEN_INDEX_HOME_QR`, is carried on the help-slide action above and fires from
+  `page/qr.js` itself when that QR screen actually opens — see §5.6's "per-entry-point QR
+  CTA" note.)
 - **Side effect — `loadNews()`**: on `build()`, if
   `now - STORAGE_KEYS.LAST_NEWS > 10 days`, sends `GET_NEWS` to the companion. On a
-  successful response with `result === "Ok"` and non-empty `news` (each item shaped
-  `{ date, title, body }`), concatenates all `news[].body` into one string, and schedules a
-  notification (title = first news item's title, content = concatenated bodies) via
-  `scheduleNotification()`, then stamps `LAST_NEWS = now`. `scheduleNotification()`'s guard
-  used to be inverted (it only scheduled when `item`/`title`/`content` were *missing*) —
-  fixed: it now schedules the alarm whenever they're present and early-returns `0`
-  otherwise.
+  successful response (`result === "Ok"`), **`LAST_NEWS` is stamped to `now`
+  unconditionally** — regardless of whether `news` came back non-empty. (This used to be
+  nested *inside* the `news.length > 0` check, so on the very common case of "server says OK
+  but has nothing new to report," the timestamp never advanced and the next `build()` —
+  i.e. the next time the main menu was opened — would see the same stale `LAST_NEWS` and
+  poll again immediately, defeating the 10-day gate entirely. Fixed: the gate now only resets
+  when the server actually answered, not when there happened to be news in that answer.)
+  Only inside the `news.length > 0` branch does it also concatenate all `news[].body`
+  (each item shaped `{ date, title, body }`) into one string and schedule a notification
+  (title = first news item's title, content = concatenated bodies) via
+  `scheduleNotification()`.
 
 ### 4.1a `page/practiceintro.js` — "Soft" onboarding before Practice
 - **Role**: the one screen standing between `page/index.js`'s Practice menu item and
@@ -189,9 +222,11 @@ should be treated as the project's *de facto* interaction contract:
   widget's own index and calls `syncFocus()`, so touch and physical-key focus always agree.
 - **The Help-styled icon always opens `DEEP_PRACTICE`, unconditionally** — tapping/selecting
   it calls `openDeep()` (fires `CTA.OPEN_DEEPER`, §5.6; pushes `page/help` with
-  `DEEP_PRACTICE`'s 5 slides — "One Date" / "One Mandala" / "One Owner" / "Make it you",
-  the strongest scarcity/urgency copy in the app; slide 5's action carries
-  `url: WEBSITE_URL, full: true, ref: "deep_practice"`). There used to be a separate
+  `DEEP_PRACTICE`'s **4** slides — "Go Deeper" / "One Date" / "One Mandala" / "One Owner",
+  the strongest scarcity/urgency copy in the app; only the 4th/last slide has an `action`:
+  `{ labelKey: "deep_practice_slide4_action", title: i18n("deep_link_to_mint"), url:
+  WEBSITE_URL + "/mint", ref: "deep_practice", cta: CTA.OPEN_DEEPER_QR }` — no `full` field;
+  see §4.6/§4.7, `page/qr.js` no longer has a fullscreen mode at all). There used to be a separate
   view-count-gated "Go deeper" button (a third focusable element, shown only after
   `AppStorage.getCounter() > IDLE_VIEWS_COUNTER` opens) distinct from a Help icon that
   opened a 3-slide `DAILY_PRACTICE` orientation deck on this same page. All three of those —
@@ -259,11 +294,12 @@ should be treated as the project's *de facto* interaction contract:
      toggled via `setVisible()` exactly like `loadingGroup`/`errorGroup`): `no_link_help_title`
      + `no_link_help_text` (the former `page/linkinfo.js` copy, now embedded here) + a pair of
      side-by-side half-width CTAs built by `buildSplitButton()` (see below), not a single
-     full-width button. Left (green, `0x00a86b`/`0x007a4d`, i18n
-     `settings_action_mint_title`) pushes `page/qr` with
-     `{ url: WEBSITE_URL + '/#mint', ref: "collection_mint" }`; right (blue, `0x1f8ed6`/`0x156fa8`, i18n
-     `no_link_link`) fires `CTA.OPEN_LINK_QR` and pushes `page/link` with
-     `{ url: AppStorage.getLinkUrl() }` — the real pairing QR, not a second "learn more" step.
+     full-width button. Left (green, `0x00a86b`/`0x007a4d`, i18n `go_website`) pushes
+     `page/qr` with `{ title: i18n("collection_go_site"), url: WEBSITE_URL, ref:
+     "collection_home", cta: CTA.OPEN_COLLECTION_QR }` — the plain website root, *not* a
+     `/mint`-suffixed URL; right (blue, `0x1f8ed6`/`0x156fa8`, i18n `no_link_link`) fires
+     `CTA.OPEN_LINK_QR` and pushes `page/link` with `{ url: AppStorage.getLinkUrl() }` — the
+     real pairing QR, not a second "learn more" step.
      No settings icon in this state (nothing to configure yet). The group also contains an
      `hmUI.widget.PAGE_SCROLLBAR` child (so it shows/hides with the group), since
      `no_link_help_text` plus the button row is long enough to push content below the screen
@@ -400,41 +436,82 @@ should be treated as the project's *de facto* interaction contract:
 
 ### 4.6 `page/help.js` — Generic help slideshow
 - **Contract**: takes `params = JSON.stringify({ slides })` where each slide is
-  `{ titleKey, textKey, action?: { labelKey, url, full?, ref? } }`. Used by `page/index`
-  (`SLIDES_MAIN`) and `page/practice` (`DEEP_PRACTICE`). (`page/practiceintro.js`'s onboarding
-  content — §4.1a — used to be a `DAILY_PRACTICE` deck rendered through this file too, with
-  a one-off in-app-navigation action kind added just for its last slide; that whole deck and
-  the action kind it needed have both been removed from here — the onboarding is its own
-  dedicated page now, not a `page/help` slide deck.)
-- Horizontal swiper (`SCROLL_MODE_SWIPER_HORIZONTAL`); haptic feedback on page-scroll-done
-  (soft buzz mid-deck, strong buzz on the last slide).
-- A slide with `action` renders a button that pushes `page/qr` with
-  `{ url: action.url, full: action.full, ref: action.ref }` — `ref` is the
-  funnel-attribution tag for that entry point (§5.6).
+  `{ titleKey, textKey, label?, action?: { labelKey, title, url, ref, cta } }`. Used by
+  `page/index` (`SLIDES_MAIN`) and `page/practice` (`DEEP_PRACTICE`). There is no `full`
+  field on `action` anymore — `page/qr.js` dropped its fullscreen mode entirely (§4.7).
+  (`page/practiceintro.js`'s onboarding content — §4.1a — used to be a `DAILY_PRACTICE` deck
+  rendered through this file too, with a one-off in-app-navigation action kind added just
+  for its last slide; that whole deck and the action kind it needed have both been removed
+  from here — the onboarding is its own dedicated page now, not a `page/help` slide deck.)
+- **Horizontal swiper, implemented via `setScrollMode`'s own callback, not a separate
+  event-subscription API**: `setScrollMode({ mode: SCROLL_MODE_SWIPER_HORIZONTAL, options:
+  { width, count, modeParams: { on_page: (current) => { ... } } } })` — `on_page` is the
+  *only* hook ZeppOS actually exposes for "a slide finished scrolling into view"; there is
+  **no** `onPageScrollDone`/`offPageScrollDone`/`getSwiperIndex` in `@zos/page` (an earlier
+  version of this file imported and called all three — none exist, so `onPageScrollDone(...)`
+  threw `TypeError: not a function` the instant `build()` ran, and nothing on this page ever
+  rendered). `on_page` does two things: fires the existing haptic feedback (strong buzz on
+  reaching the last slide, nothing on the others — the mid-deck "soft buzz" mentioned in an
+  earlier pass of this doc does not actually exist in the code) and writes the current index
+  into `state.currentIndex`, which the physical-key handler below depends on.
+- **Physical `KEY_SELECT` support**: a slide's `action` button used to be reachable by touch
+  only. `build()` now also registers `onKey({ callback: (key, keyEvent) => {...} })`: on a
+  classified `KEY_SELECT` click, it looks up `state.slides[state.currentIndex]` and, if that
+  slide has an `action`, calls `this.openAction(action)` — the same method the button's own
+  `click_func` calls — and returns `true`; any other key, or a slide with no `action` (a
+  `label`-only slide, or a slide with neither), returns `false` without side effects.
+  `offKey()` is called in `onDestroy()` to match. `openAction(action)` itself does the haptic
+  + `push({url: "page/qr", params: JSON.stringify({url: action.url, title: action.title,
+  ref: action.ref, cta: action.cta})})` that used to be inlined directly in the button's
+  `click_func` — pulled into its own method specifically so touch and the physical key share
+  one implementation instead of two.
 - **If `slides` is empty/missing, `build()` logs an error and renders nothing** — no
   fallback UI.
+- **Known leftover**: the slide-title `TEXT` widget's height is still hardcoded to `px(80)`
+  (`h: px(80), //h: titleLayout.height,` — the dynamically-measured `titleLayout.height` is
+  computed right above it but not actually used). Harmless for the short titles every current
+  caller passes, but a sufficiently long/wrapped title could still clip against the divider
+  below it; not fixed, since the one reported real-world clipping on this page turned out to
+  be the *body* text (§6's `getTextLayout` note), not the title.
 
 ### 4.7 `page/qr.js` — Generic "scan to open URL" screen
-- **Contract**: `params = JSON.stringify({ url, full?, ref? })`; `url` defaults to the
-  website root if absent/unparsable, `full` toggles a QR-only fullscreen layout (hides
-  title/intro/body text, used by the Go deeper slide — §4.2), `ref` is an optional
-  funnel-attribution tag (§5.6).
+- **Role and visual contract rewritten to match `page/link.js`'s QR screen** (title above,
+  one QR code, one caption below, Back button) — the previous version (title + intro +
+  domain + body text, with a `full` param that hid three of those four widgets for a
+  QR-only fullscreen variant) is gone entirely. There is no fullscreen mode anymore; every
+  caller gets the same single layout.
+- **Contract**: `params = JSON.stringify({ title?, url?, ref?, cta? })`.
+  - `title` overrides the default `i18n("help_qr_title")` ("Scan"/"Отсканируй") — every
+    current caller passes its own (`help.js`'s slide actions, `settings.js`'s Mint,
+    `collection.js`'s not-linked-state website button all supply `title`). Since this can be
+    arbitrary caller-supplied text (ultimately server-driven for `page/help.js`'s slides),
+    the title `TEXT` widget's height is the one place in this file that *is* measured
+    dynamically (`measureText`, §6) rather than fixed, and the QR's own Y position is pushed
+    down (`Math.max(height*0.17, titleY + titleLayout.height + px(8))`) if a long/wrapped
+    title needs more than one line — otherwise the QR sits at its normal fixed `height*0.17`.
+  - `url` defaults to the website root (`https://mandala.garageno9.site`) if absent/unparsable.
+  - `ref` is an optional funnel-attribution tag (§5.6), appended to the *encoded* URL only
+    (see `withRef()` below) — not shown anywhere in the UI.
+  - `cta` overrides which `CTA` label fires on open — defaults to `CTA.OPEN_QR` in
+    `state.cta` if the caller doesn't supply one. This is new: previously `build()` always
+    fired the one hardcoded `CTA.OPEN_QR` regardless of caller; now each entry point can tag
+    its own QR-open event (`OPEN_DEEPER_QR`, `OPEN_INDEX_HOME_QR`, `OPEN_COLLECTION_QR`,
+    `OPEN_MINT_QR` — see §5.6) while `page/qr.js` itself stays generic.
 - **Attribution**: `withRef(url, ref)` appends `?ref=<ref>` (or `&ref=` if `url` already has
   a query string) to the URL actually encoded in the `QRCODE` widget's `content` — the
-  *displayed* domain text is untouched, only the scannable payload carries `ref`. `build()`
-  also unconditionally fires `CTA.OPEN_QR` (§5.6) on every open of this screen, regardless
-  of whether `ref` is present.
-- **Perf note**: the `title`/`intro`/`text` i18n lookups and `getTextLayout()` measurements
-  run inside their respective `if (!this.state.fullScreen)` blocks, not unconditionally —
-  in `fullScreen` mode none of those three widgets are ever created, so measuring them is
-  skipped entirely rather than computed and discarded.
-- Static content is still pulled from fixed i18n keys (`help_qr_title/intro/domain/text`) —
-  **the displayed text is still not parameterized by `ref` or by the passed-in URL's
-  origin**, only the QR code's `content` carries that information; a caller passing an
-  unrelated `url`/`ref` still shows the same generic "Mint & Link" copy. Open product
-  follow-up, not addressed by the attribution work above.
-- Renders a `QRCODE` widget + (outside fullscreen) title/intro/domain/body text + a Back
-  button (`back()`).
+  domain caption text (`i18n("help_qr_domain")`, a fixed string, not derived from `url`) is
+  untouched, only the scannable payload carries `ref`.
+- **Layout** (`showQr(title, url, domain)`): QR size `Math.floor(Math.min(width, height) *
+  0.45)`; title `TEXT` at `height*0.05` from the top; the domain caption below the QR has its
+  height computed as the *remaining* gap down to the Back button (`UI.backY - bgY`), so it
+  can never collide with the button regardless of content; Back button height/radius now
+  come from the shared `SECONDARY_BUTTON_HEIGHT` constant (§5.1), not a local `px(72)`
+  literal.
+- **Known dead code**: the `UI` object at the top of the file still declares
+  `titleX/titleY/titleW/titleSize`, `introX/introY/introW/introSize`, `qrSize/qrY`,
+  `domainX/domainSize`, `textX/textW/textSize` — all leftovers from the pre-rewrite 4-widget
+  layout. None of them are read anywhere in the current `showQr()`; only `UI.backX/backY/
+  backW/backH` are live. Not removed yet.
 
 ### 4.8 `page/settings.js` — Collection maintenance actions
 - **Role**: the wallet/collection "settings" hub, reached from `page/collection.js`'s
@@ -532,7 +609,15 @@ should be treated as the project's *de facto* interaction contract:
   palette instead (`PRACTICE_NORMAL_COLOR`/`PRACTICE_PRESSED_COLOR`/`PRACTICE_SELECTED_COLOR`,
   plus `SECONDARY_BUTTON_HEIGHT`) exported from the per-shape
   `zosLoader:./index.[pf].layout.js` files — not an override of this module's constants, a
-  different symbol set entirely (see §2.1). `ERROR_COLOR` is used for error-state text in
+  different symbol set entirely (see §2.1). `SECONDARY_BUTTON_HEIGHT` is `px(72)` (changed
+  from a prior `px(100)` that had drifted away from every other screen's own hand-rolled
+  `px(72)`) and is now imported and used for the standard small action-button height on
+  **four** pages — `page/settings.js` (`UI.btnH`), `page/collection.js` (`BTN_H`, the
+  not-linked-state split buttons, §4.4), `page/help.js` (`UI.actionH`, §4.6), and
+  `page/qr.js` (`UI.backH`, §4.7) — all previously independent `px(72)` literals that
+  happened to already agree in value, now reading the one shared constant.
+  `page/link.js`'s own confirm/cancel/retry/OK buttons (`UI.btnH`, §4.5) still use a local,
+  un-migrated `px(72)` literal — same value, not yet wired to the shared constant. `ERROR_COLOR` is used for error-state text in
   `page/link.js` (`showDone(false, …)`) and `page/show.js` (its error text widget) in place
   of the `0xcc3344`/`0xbdbdbd` literals those two files used to hardcode locally.
   `DEFAULT_COLOR`/`DEFAULT_COLOR_TRANSPARENT` (previously `0xfc6950`/`0xfeb4a8`) have been
@@ -657,22 +742,29 @@ not the older ones.
 Two independent, additive mechanisms track how users move toward the website/mint funnel;
 neither depends on the other.
 
-- **`ref` query param (`page/qr.js`)**: every help-slide action in `page/index.js SLIDES_MAIN`
-  and `page/practice.js DEEP_PRACTICE` (§4.6), `page/settings.js`'s `openMint()`, and
-  `page/collection.js`'s empty-state Mint button (§4.4) each carry a `ref` string alongside
-  `url`. `page/help.js` forwards its copy unchanged into `page/qr.js`'s params; `qr.js`
-  appends it to the URL encoded in the QR (`withRef()` — §4.7). Current values: `help_main`,
-  `deep_practice`, `settings_mint`, `collection_mint` — the last two both land on the mint
-  QR but are tagged separately so the site can tell "opened via Settings" apart from
-  "opened right from an empty collection." This lets the
-  *website* attribute a scan to the specific in-app entry point that produced it, purely via
-  its own access logs — nothing is sent back to the watch/companion for this.
+- **`ref` query param (`page/qr.js`)**: every QR-opening `action`/params object in
+  `page/index.js SLIDES_MAIN`, `page/practice.js DEEP_PRACTICE` (§4.6),
+  `page/settings.js`'s `openMint()`, and `page/collection.js`'s not-linked-state website
+  button (§4.4) carries a `ref` string alongside `url`. `page/help.js` forwards its copy
+  unchanged into `page/qr.js`'s params; `qr.js` appends it to the URL encoded in the QR
+  (`withRef()` — §4.7). Current values: `index_home` (main-menu help), `deep_practice`
+  (Practice's deep-dive slides), `settings_mint` (Settings → Mint), `collection_home`
+  (Collection's not-linked-state website button) — each tags a distinct in-app entry point
+  so the *website* can attribute a scan to it, purely via its own access logs; nothing is
+  sent back to the watch/companion for this.
+- **Per-entry-point QR-open CTA, carried the same way as `ref`**: since `page/qr.js` reads
+  an optional `cta` field out of its own params (§4.7, defaulting to `CTA.OPEN_QR` if the
+  caller didn't supply one) and fires it unconditionally in `build()`, every one of the same
+  call sites above also sets its *own* distinct CTA label on the `action`/params object
+  instead of all funnelling into one generic "a QR screen opened" event. This is new
+  relative to an earlier version of this app, where `page/qr.js` always fired the single
+  hardcoded `CTA.OPEN_QR` regardless of who opened it.
 - **`CTA_EVENT` companion method** (`utils/watch-api.js WatchApi.sendCtaEvent(page, cta)` →
   `app-side/index.js sendCtaEvent()` → `GET {WEBSITE_URL}/api/watch//event/{cta}`, same
   three headers as every other companion→backend call — `User-Agent`, `X-App-Version`,
-  `X-User`): a fire-and-forget ping that records a labeled funnel step server-side,
-  independent of whether that step ever reaches `page/qr.js` (tapping Help, or confirming a
-  wallet link, aren't QR events). Every call site does
+  `X-User`): a fire-and-forget ping that records a labeled funnel step server-side.
+  `page/qr.js`'s own open-event (previous bullet) goes through this same method, just with a
+  per-caller `cta` value instead of a literal. Every call site does
   `WatchApi.sendCtaEvent(this, CTA.X).catch(() => {})` — errors are swallowed and the
   triggering navigation proceeds regardless.
 
@@ -680,24 +772,31 @@ neither depends on the other.
 
   | Label | Fires in | Trigger |
   |---|---|---|
-  | `OPEN_MAIN_HELP` | `page/index.js` `executeAction()` | Help icon activated on the main menu |
+  | `OPEN_INDEX_HOME` | `page/index.js` `executeAction()` | Help icon activated on the main menu |
+  | `OPEN_INDEX_HOME_QR` | `page/qr.js` `build()`, via `SLIDES_MAIN` slide 3's `action.cta` | the main-menu help deck's "visit website" QR actually opened |
   | `OPEN_DAILY_HELP` | `page/practiceintro.js` `build()` | the onboarding screen shown (§4.1a) — fires on every repeat showing, not just the first |
   | `OPEN_DEEPER` | `page/practice.js` `openDeep()` | the Help-styled icon on Practice activated — unconditional now, no view-count gate (§4.2) |
+  | `OPEN_DEEPER_QR` | `page/qr.js` `build()`, via `DEEP_PRACTICE` slide 4's `action.cta` | the deep-practice deck's mint QR actually opened |
+  | `OPEN_COLLECTION_QR` | `page/qr.js` `build()`, via `page/collection.js`'s not-linked-state left button's `cta` (§4.4) | the not-linked-state website QR actually opened |
   | `OPEN_LINK_QR` | `page/collection.js`'s not-linked state, right split-button (§4.4) | the pairing-QR half of the button pair tapped — moved here from the deleted `page/nolink.js`, same meaning |
-  | `OPEN_QR` | `page/qr.js` `build()` | any open of the generic QR screen |
+  | `OPEN_MINT_QR` | `page/qr.js` `build()`, via `page/settings.js`'s `openMint()` `cta` (§4.8) | the Settings → Mint QR actually opened |
+  | `OPEN_QR` | `page/qr.js` `build()` | fallback default for `state.cta` when no caller-supplied `cta` is present |
   | `CONFIRM_LINK` | `page/link.js` `confirm()` | "Confirm" tapped on the wallet-confirmation screen |
   | `LINKED` | `page/link.js` `showDone(true, …)`; `page/collection.js` `checkLinkInBackground()` on `status === "OK"` (§4.4) | device confirms the wallet link succeeded — two independent detection paths |
 
-  **Removed**: `OPEN_COLLECTION_HELP` and `OPEN_COLLECTION_QR` — both only ever fired on the
-  now-deleted `page/nolink.js`'s "Details" step and `page/linkinfo.js`'s own CTA button;
-  with that two-step "learn more, then link" flow gone (§4.4), neither label has anywhere
-  left to fire from.
+  **Removed**: `OPEN_COLLECTION_HELP` — only ever fired on the now-deleted
+  `page/nolink.js`'s "Details" step; with that screen gone (§4.4), the label had nowhere
+  left to fire from, and grep confirmed zero remaining references before it was deleted.
+  (`OPEN_COLLECTION_QR` is **not** removed — a prior pass of this document incorrectly
+  grouped it with `OPEN_COLLECTION_HELP` as both-removed; it's very much alive, see the
+  table above.)
 
-  Together these give a step-by-step funnel: entry CTA tapped → reached a QR screen (`ref`
-  identifies which one) → (link flow only) confirmed → linked. **Not instrumented:**
-  Cancel/Reject on the wallet-confirmation screen — only the success path is labeled, so a
-  user who backs out there is only visible as an implicit gap between `CONFIRM_LINK` and
-  `LINKED`, not a labeled event of its own.
+  Together these give a step-by-step funnel: entry CTA tapped → the specific QR screen that
+  opened (both `ref`, for the website's own logs, and a distinct `OPEN_*_QR` label, for the
+  backend's) → (link flow only) confirmed → linked. **Not instrumented:** Cancel/Reject on
+  the wallet-confirmation screen — only the success path is labeled, so a user who backs out
+  there is only visible as an implicit gap between `CONFIRM_LINK` and `LINKED`, not a
+  labeled event of its own.
 
 ---
 
@@ -742,10 +841,21 @@ them deliberately (in the spec first) rather than by accident.
    Refresh/Unlink** (§4.8) — a deliberate choice (the flag can go stale any time the link
    state changes outside this device's knowledge, and every action there is
    self-correcting), not an oversight.
-5. **Ambient/global companion APIs.** `app-side/index.js` uses `Logger`, `fetch`,
-   `network`, `image`, and `transferFile` with no imports — these are ZeppOS side-service
-   globals injected at runtime, not missing dependencies. `logger` (lowercase, module
-   `Logger.getLogger('mandala-day')`) is the one explicit local.
+5. **Ambient/global companion APIs — and one that turned out not to be one.**
+   `app-side/index.js` uses `fetch`, `network`, `image`, and `transferFile` with no imports —
+   these genuinely are ZeppOS side-service globals injected at runtime, not missing
+   dependencies. **`Logger` was not** one of these — `@zos/utils`'s `log`/`Logger` is a
+   *device-app-only* API (ZeppOS's own guidance: Side Service/App Service code should use
+   plain `console.log`); it does not exist as a global in the Side Service context at all.
+   An earlier version of this file had `const logger = Logger.getLogger('mandala-day')` as
+   a **module-top-level statement with no import of `Logger`** — `ReferenceError: Logger is
+   not defined` thrown at module load, before `AppSideService(...)` ever registers its
+   `onRequest` handler. Net effect: the companion never started, so **every**
+   `page.request(...)` call from the watch (`GET_MANDALA`, `GET_NEWS`, all `LINK_*`, etc. —
+   the whole table in §7) would simply hang waiting for a response that could never come, on
+   every device, every time. Fixed: the `Logger`/`logger` indirection is gone entirely — every
+   former `logger.log(...)` call site now calls `console.log(...)` directly, matching
+   ZeppOS's own guidance for this execution context.
 6. **The device `Page` API has no `onResume`/`onPause` lifecycle hooks — confirmed from
     `node_modules/@zeppos/device-types/dist/index.d.ts`'s `Page.Option` interface, which
     lists only `state`, `onInit`, `build`, `onDestroy`.** (`onResume`/`onPause` do exist,
@@ -797,6 +907,44 @@ them deliberately (in the spec first) rather than by accident.
    `GROUP`s (siblings of `notLinkedGroup`, not children of it) with their own explicit
    `setVisible()` calls alongside it. **Going forward: never nest a `GROUP` inside another
    `GROUP` you created yourself — one level only, always directly on the page.**
+9. **`getTextLayout()`'s `height`/`rows` fields stop growing past ~2 lines of wrapped text —
+   a confirmed ZeppOS SDK bug, not an app bug** (community report:
+   `zepp-health/discussions#347` — "When the text takes more than 2 lines the height stops
+   growing and the width stops growing very early," reproduced independently against this
+   app's own multi-paragraph strings). Every page that sizes a `TEXT` widget from measured
+   content — `page/help.js`, `page/collection.js`, `page/practiceintro.js`,
+   `page/settings.js`, `page/qr.js` — has its own local `measureText(text, size, textWidth)`
+   helper (all five currently identical) that calls `getTextLayout(..., {wrapped: 1})` and
+   then returns `{ ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) }`
+   — a floor computed from the reported line count (`rows`) times an assumed `1.3`
+   line-height multiplier, taken only when it's *larger* than whatever `getTextLayout`
+   itself reported, so short (≤2-line) text that `getTextLayout` already measures correctly
+   is untouched. This was reached after an unsuccessful first attempt at a fix that didn't
+   use `getTextLayout` at all (manual word-wrap simulated by estimating an average
+   glyph width in JS) — that version was tried and then deliberately reverted back to the
+   `rows`-based one above across all five files; treat the current `rows`-based version as
+   the settled implementation, not an intermediate step. Whether `rows` itself is fully
+   reliable at every line count beyond what's been tested here is not independently
+   confirmed — the `Math.max` floor is a safety margin, not a proof of correctness.
+10. **Two ZeppOS API names used in earlier versions of this app do not exist; both caused a
+    hard crash where they were called, not just a silent no-op:**
+    - `resumeDropWristScreenOff` — not a real export of `@zos/display`. The real name is
+      `resetDropWristScreenOff()` (no arguments, API level 2.1+ per ZeppOS docs — `page/show.js`
+      already used the correct name). `page/link.js` and `page/qr.js` both imported and called
+      the nonexistent name in their respective `onDestroy()`; since the import resolves to
+      `undefined`, calling it threw `TypeError: not a function` every time either page was
+      left, logged as `"...at onDestroy in link.js/qr.js (context extraction failed)"`.
+      Fixed on both files: `resumeDropWristScreenOff({duration: 0})` → `resetDropWristScreenOff()`.
+    - `onPageScrollDone`/`offPageScrollDone`/`getSwiperIndex` as *separate, standalone*
+      `@zos/page` exports — also not real (confirmed against ZeppOS's own `setScrollMode`
+      reference: the only documented hook for "a slide finished scrolling into view" is the
+      `on_page` callback passed inside `setScrollMode`'s own `options.modeParams`, §4.6).
+      `page/help.js` used to import and call `onPageScrollDone(callback)` directly in
+      `build()`, right after `setScrollMode(...)` — threw immediately, so nothing on that
+      page past that line ever got built (no slides, no page indicator) on any open of
+      `page/help.js` from any entry point. Fixed: the callback now lives inside
+      `setScrollMode`'s own `modeParams.on_page`, and the two nonexistent `offPageScrollDone`/
+      unused `getSwiperIndex` imports/calls are gone.
 
 ---
 

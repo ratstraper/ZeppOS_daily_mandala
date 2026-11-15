@@ -7,6 +7,7 @@ import { onKey, offKey, KEY_EVENT_CLICK } from "@zos/interaction";
 import { BasePage } from "@zeppos/zml/base-page";
 import AppStorage from "../utils/config/storage.js";
 import { WatchApi } from "../utils/watch-api";
+import { measureText } from "../utils/TextUtils.js";
 import { STORAGE_KEYS, WEBSITE_URL, NORMAL_COLOR, PRESSED_COLOR, CTA } from "../utils/config/constants.js";
 import { width } from "../utils/config/device.js";
 import { TITLE, SECONDARY_BUTTON_HEIGHT, WORK_SCREEN as ui } from "zosLoader:./index.[pf].layout.js";
@@ -34,17 +35,6 @@ const UI = {
   gapBetweenSections: px(40),
   bottomPad: px(80),
 };
-
-function measureText(text, size, textWidth) {
-  const layout = hmUI.getTextLayout(text, {
-    text_size: size,
-    text_width: textWidth,
-    wrapped: 1,
-  });
-  // getTextLayout.height перестаёт расти после ~2 строк (известный баг ZeppOS SDK,
-  // zepp-health/discussions#347) — подстраховываемся через rows.
-  return { ...layout, height: Math.max(layout.height, layout.rows * size * 1.3) };
-}
 
 function hapticSoft() {
   vibrator.stop();

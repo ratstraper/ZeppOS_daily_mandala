@@ -57,6 +57,7 @@ Page(
       hmUI.setStatusBarVisible(false)
       logger.log(`INDEX.JS`);
       logger.log(`DEVICE_WIDTH=${DEVICE_WIDTH}, DEVICE_HEIGHT=${DEVICE_HEIGHT}`);
+      this.trackFirstLaunch();
       this.layout = this.createLayout();
       this.loadNews();
  
@@ -259,6 +260,25 @@ Page(
         pushOptions.params = item.params;
       }
       push(pushOptions);
+    },
+
+    // Срабатывает один раз за всё время жизни установки — на самом первом
+    // построении главного экрана, пока STORAGE_KEYS.FIRST_LAUNCH_SEEN ещё не
+    // выставлен. Бэкенд, сопоставляя время этого события с более поздними
+    // CTA от того же usr (см. Profile.createRequestData()), может посчитать,
+    // через сколько дней/раз пользователь вернулся в приложение.
+    // В отличие от остальных CTA в приложении (fire-and-forget), флаг тут
+    // выставляется только при подтверждённой доставке — событие разовое и
+    // неповторяемое, поэтому при сбое сети/BLE попытка повторится на
+    // следующем открытии главного экрана, а не теряется навсегда.
+    trackFirstLaunch() {
+      if (AppStorage.getRecord(STORAGE_KEYS.FIRST_LAUNCH_SEEN)) return;
+      WatchApi.sendCtaEvent(this, CTA.FIRST_LAUNCH)
+        .then((result) => {
+          if (result && result.status === 'ERROR') return;
+          AppStorage.setRecord(STORAGE_KEYS.FIRST_LAUNCH_SEEN, true);
+        })
+        .catch(() => {});
     },
 
     updateStatusText(message) {

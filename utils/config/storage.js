@@ -1,6 +1,8 @@
 import { LocalStorage } from '@zos/storage';
 import { Time } from "@zos/sensor";
-import { STORAGE_KEYS, WEBSITE_URL } from './constants';
+import { getDeviceInfo } from '@zos/device';
+import { STORAGE_KEYS, WEBSITE_URL, INSTALL_ID_SALT } from './constants';
+import { hashId } from '../hashId.js';
 
 const storage = new LocalStorage();
 
@@ -8,11 +10,18 @@ export default class AppStorage {
 
   static getInstallationId() {
     let installId = storage.getItem(STORAGE_KEYS.INSTALL_ID);
+    if (installId) return installId;
 
-    if (!installId) {
-      installId = 'ZeppOS_usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
-      storage.setItem(STORAGE_KEYS.INSTALL_ID, installId);
-    }
+    // uuid устройства (API 4.2+) даёт стабильный id без хранения "сырых" данных —
+    // передаётся только его хэш, не сам uuid. На более старых часах uuid нет,
+    // тогда это обычный случайный id, как и раньше.
+    // ZeppOS_usr_1xvw3lq13iz5en or ZeppOS_usr_mwbryjbg_046517577 on API < 4.2
+    const { uuid } = getDeviceInfo();
+    installId = uuid
+      ? 'ZeppOS_usr_' + hashId(INSTALL_ID_SALT + uuid)
+      : 'ZeppOS_usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+
+    storage.setItem(STORAGE_KEYS.INSTALL_ID, installId);
     return installId;
   }
 

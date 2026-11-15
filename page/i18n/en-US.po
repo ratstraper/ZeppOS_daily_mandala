@@ -82,7 +82,7 @@ msgid "about_practice_slide_title2"
 msgstr "Track your"
 
 msgid "about_practice_slide_text2"
-msgstr "Streak - your current series of daily practises.\nBest - your personal record in streaks."
+msgstr "Streak - your current series of daily practises.\nBest - your personal record in streaks.\n"
 
 msgid "practice_intro_dont_show_again"
 msgstr "Don't show again"

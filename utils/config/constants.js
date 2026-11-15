@@ -7,6 +7,8 @@ export const ERROR_COLOR = 0xCC3344;
 
 export const WEBSITE_URL = "https://mandala.garageno9.site";
 
+export const INSTALL_ID_SALT = "daily-mandala-amazfit";
+
 export const STORAGE_KEYS = {
   INSTALL_ID: 'appInstallId',
   MANDALA_DAY: 'mandalaDay',
@@ -18,12 +20,14 @@ export const STORAGE_KEYS = {
   LAST_NEWS: 'lastNews',
   COLLECTION_REFRESH: 'collectionRefreshRequested',
   PRACTICE_INTRO_SEEN: 'practiceIntroSeen',
+  FIRST_LAUNCH_SEEN: 'firstLaunchSeen',
 };
 
 export const PRACTICE_SHOW = 1;
 export const COLLECTION_SHOW = 2;
 
 export const CTA = {
+  FIRST_LAUNCH: 'FIRST_LAUNCH',
   OPEN_DEEPER: 'OPEN_DEEPER',
   OPEN_DEEPER_QR: 'OPEN_DEEPER_QR',
   OPEN_INDEX_HOME: 'OPEN_INDEX_HOME',
